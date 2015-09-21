@@ -24,4 +24,4 @@ okfn
 ushahidi
 ```
 
-The results will be stored in the `data` subfolder.
+3. Start the scraper with `python github_scaper.py` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). The results will be stored in the `data` subfolder.
