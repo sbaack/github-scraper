@@ -126,7 +126,6 @@ def get_repos(org_list):
                     'name',
                     'full_name',
                     'stargazers_count',
-                    'watchers_count',
                     'language',
                     'created_at',
                     'updated_at',
@@ -202,7 +201,6 @@ def get_members_repos(org_list):
                     'full_name',
                     'fork',
                     'stargazers_count',
-                    'watchers_count',
                     'forks_count',
                     'language',
                     'description'
