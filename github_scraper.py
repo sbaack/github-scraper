@@ -96,13 +96,8 @@ def generate_csv(type, json_list, columns_list):
         csv_file = csv.DictWriter(f, fieldnames=columns_list,
                                   extrasaction="ignore")
         csv_file.writeheader()
-        if type == "members-info":
-            for member in json_list:
-                csv_file.writerow(member)
-        else:
-            for org in range(len(json_list)):
-                for item in range(len(json_list[org])):
-                    csv_file.writerow(json_list[org][item])
+        for item in json_list:
+            csv_file.writerow(item)
     print("\nCSV file saved as data/" + type + "_" +
           time.strftime("%Y-%m-%d_%H:%M:%S") + ".csv")
 
@@ -119,7 +114,7 @@ def get_repos(org_list):
             repo['organization'] = org
             # Python 2: Using smart_str to deal with encodings
             repo['description'] = smart_str(repo['description'])
-        jsonRepos.append(jsonRepo)
+            jsonRepos.append(repo)
     # Create a list with the items I'm interested in, then call generate_csv
     columns_list = [
                     'organization',
@@ -171,7 +166,7 @@ def get_contributors(org_list):
                     # Then prepare CSV and add fields to make it more usable
                     contributor["organization"] = org
                     contributor["repository"] = repo["name"]
-                jsonContributor_list.append(jsonContributors)
+                    jsonContributor_list.append(contributor)
             except:
                 # If repository is empty, fill out the rows with "N/A"
                 print("Repository '" + repo["name"] + "' returned an error, "
@@ -220,7 +215,7 @@ def get_members_repos(org_list):
                 repo['user'] = member['login']
                 # Python 2: Using smart_str to deal with encodings
                 repo['description'] = smart_str(repo['description'])
-            jsonMembersRepo_list.append(jsonMembersRepos)
+                jsonMembersRepo_list.append(repo)
     generate_csv("members-list", jsonMembersRepo_list, columns_list)
 
 
@@ -282,7 +277,7 @@ def get_starred_repos(org_list):
                 repo['user'] = member['login']
                 # Python 2: Using smart_str to deal with encodings
                 repo['description'] = smart_str(repo['description'])
-            jsonMembersStarred_list.append(jsonStarred)
+                jsonMembersStarred_list.append(repo)
     generate_csv("starred-list", jsonMembersStarred_list, columns_list)
 
 
