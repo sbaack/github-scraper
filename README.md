@@ -26,4 +26,4 @@ ushahidi
 
 3. Start the scraper with `python github_scaper.py` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). The results will be stored in the `data` subfolder.
 
-If you run the script, required packages might be missing. Install via `[sudo] pip install -r requirements.txt`.
+If you cannot run the script, required packages might be missing. Install via `[sudo] pip install -r requirements.txt`.
