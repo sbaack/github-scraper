@@ -230,14 +230,14 @@ def get_members_repos(org_list):
                 jsonMembersRepos = load_json("https://api.github.com/users/" +
                                              member['login'] +
                                              "/repos?per_page=100")
-            for page in range(len(jsonMembersRepos)):
-                for repo in jsonMembersRepos[page]:
-                    # Add fields to make CSV file more usable
-                    repo['organization'] = org
-                    repo['user'] = member['login']
-                    # Python 2: Using smart_str to deal with encodings
-                    repo['description'] = smart_str(repo['description'])
-                    jsonMembersRepo_list.append(repo)
+                for page in range(len(jsonMembersRepos)):
+                    for repo in jsonMembersRepos[page]:
+                        # Add fields to make CSV file more usable
+                        repo['organization'] = org
+                        repo['user'] = member['login']
+                        # Python 2: Using smart_str to deal with encodings
+                        repo['description'] = smart_str(repo['description'])
+                        jsonMembersRepo_list.append(repo)
     generate_csv("members-list", jsonMembersRepo_list, columns_list)
 
 
