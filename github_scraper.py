@@ -81,12 +81,28 @@ def start():
             operations_dict[int(operation)](org_list)
 
 
-def load_json(url):
+def load_json(url, memberscrape=False):
     # TODO: Add error handling if request fails (e.g. if repo was not found)
-    """Helper function to load json file using requests."""
-    r = requests.get(url, auth=(username, api_token))
-    jsonData = json.loads(r.text)
-    return jsonData
+    """Helper function to load json file using requests. Iterates over the
+    pages of the API and returns a list of dicts."""
+    if memberscrape:
+        r = requests.get(url, auth=(username, api_token))
+        jsonData = json.loads(r.text)
+        return jsonData
+    else:
+        page = 1
+        jsonList = []
+        page_not_empty = True
+        while page_not_empty:
+            r = requests.get(url + "&page=" + str(page), auth=(username,
+                                                               api_token))
+            jsonData = json.loads(r.text)
+            if jsonData == []:
+                page_not_empty = False
+            else:
+                jsonList.append(jsonData)
+                page += 1
+        return jsonList
 
 
 def generate_csv(type, json_list, columns_list):
@@ -109,12 +125,13 @@ def get_repos(org_list):
         print("\nScraping repositories of", org)
         jsonRepo = load_json("https://api.github.com/orgs/" + org +
                              "/repos?per_page=100")
-        for repo in jsonRepo:
-            # Add field for org to make CSV file more useful
-            repo['organization'] = org
-            # Python 2: Using smart_str to deal with encodings
-            repo['description'] = smart_str(repo['description'])
-            jsonRepos.append(repo)
+        for page in range(len(jsonRepo)):
+            for repo in jsonRepo[page]:
+                # Add field for org to make CSV file more useful
+                repo['organization'] = org
+                # Python 2: Using smart_str to deal with encodings
+                repo['description'] = smart_str(repo['description'])
+                jsonRepos.append(repo)
     # Create a list with the items I'm interested in, then call generate_csv
     columns_list = [
                     'organization',
@@ -149,35 +166,38 @@ def get_contributors(org_list):
         print('\nScraping contributors of', org)
         jsonRepo = load_json("https://api.github.com/orgs/" + org +
                              "/repos?per_page=100")
-        for repo in jsonRepo:
-            # try...except to deal with empty repositories
-            try:
-                print("Getting contributors of", repo["name"])
-                # First, add repo as a node to the graph
-                graph.add_node(repo['name'], organization=org)
-                # Then get a list of contributors
-                jsonContributors = load_json("https://api.github.com/repos/" +
-                                             org + "/" + repo["name"] +
-                                             "/contributors")
-                for contributor in jsonContributors:
-                    # Add each contributor as an edge to the graph
-                    graph.add_edge(contributor['login'], repo['name'],
-                                   organization=org)
-                    # Then prepare CSV and add fields to make it more usable
-                    contributor["organization"] = org
-                    contributor["repository"] = repo["name"]
-                    jsonContributor_list.append(contributor)
-            except:
-                # If repository is empty, fill out the rows with "N/A"
-                print("Repository '" + repo["name"] + "' returned an error, "
-                      "possibly because it's empty.")
-                contributor['organization'] = org
-                contributor['repository'] = repo["name"]
-                contributor['login'] = "N/A"
-                contributor['contributions'] = "N/A"
-                contributor['html_url'] = "N/A"
-                contributor['url'] = "N/A"
-            continue
+        for repo_page in range(len(jsonRepo)):
+            for repo in jsonRepo[repo_page]:
+                # try...except to deal with empty repositories
+                try:
+                    print("Getting contributors of", repo["name"])
+                    # First, add repo as a node to the graph
+                    graph.add_node(repo['name'], organization=org)
+                    # Then get a list of contributors
+                    jsonContributors = load_json("https://api.github.com/"
+                                                 "repos/" + org + "/" +
+                                                 repo["name"] +
+                                                 "/contributors?per_page=100")
+                    for page in range(len(jsonContributors)):
+                        for contributor in jsonContributors[page]:
+                            # Add each contributor as an edge to the graph
+                            graph.add_edge(contributor['login'], repo['name'],
+                                           organization=org)
+                            # Prepare CSV and add fields to make it more usable
+                            contributor["organization"] = org
+                            contributor["repository"] = repo["name"]
+                            jsonContributor_list.append(contributor)
+                except:
+                    # If repository is empty, fill out the rows with "N/A"
+                    print("Repository '" + repo["name"] +
+                          " returned an error, possibly because it's empty.")
+                    contributor['organization'] = org
+                    contributor['repository'] = repo["name"]
+                    contributor['login'] = "N/A"
+                    contributor['contributions'] = "N/A"
+                    contributor['html_url'] = "N/A"
+                    contributor['url'] = "N/A"
+                continue
     generate_csv("contributor-list", jsonContributor_list, columns_list)
     nx.write_gexf(graph, "data/contributor-network_" +
                   time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
@@ -204,18 +224,20 @@ def get_members_repos(org_list):
         print('\nGetting members of', org)
         jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                 "/members?per_page=100")
-        for member in jsonMembers:
-            print('Getting repositories of', member['login'])
-            jsonMembersRepos = load_json("https://api.github.com/users/" +
-                                         member['login'] +
-                                         "/repos?per_page=100")
-            for repo in jsonMembersRepos:
-                # Add fields to make CSV file more usable
-                repo['organization'] = org
-                repo['user'] = member['login']
-                # Python 2: Using smart_str to deal with encodings
-                repo['description'] = smart_str(repo['description'])
-                jsonMembersRepo_list.append(repo)
+        for page in range(len(jsonMembers)):
+            for member in jsonMembers[page]:
+                print('Getting repositories of', member['login'])
+                jsonMembersRepos = load_json("https://api.github.com/users/" +
+                                             member['login'] +
+                                             "/repos?per_page=100")
+            for page in range(len(jsonMembersRepos)):
+                for repo in jsonMembersRepos[page]:
+                    # Add fields to make CSV file more usable
+                    repo['organization'] = org
+                    repo['user'] = member['login']
+                    # Python 2: Using smart_str to deal with encodings
+                    repo['description'] = smart_str(repo['description'])
+                    jsonMembersRepo_list.append(repo)
     generate_csv("members-list", jsonMembersRepo_list, columns_list)
 
 
@@ -238,18 +260,20 @@ def get_members_info(org_list):
         print('\nGetting members of', org)
         jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                 "/members?per_page=100")
-        for member in jsonMembers:
-            print("Getting user information for", member["login"])
-            jsonMembers = load_json("https://api.github.com/users/" +
-                                    member["login"])
-            # Add field to make CSV file more usable
-            jsonMembers["organization"] = org
-            # Python 2: Using smart_str to deal with encodings
-            jsonMembers["location"] = smart_str(jsonMembers['location'])
-            jsonMembers["name"] = smart_str(jsonMembers['name'])
-            jsonMembers["company"] = smart_str(jsonMembers['company'])
-            jsonMembers["email"] = smart_str(jsonMembers['email'])
-            jsonMembersInfo_list.append(jsonMembers)
+        for page in range(len(jsonMembers)):
+            for member in jsonMembers[page]:
+                print("Getting user information for", member["login"])
+                jsonMember = load_json("https://api.github.com/users/" +
+                                       member["login"] + "?per_page=100",
+                                       memberscrape=True)
+                # Add field to make CSV file more usable
+                jsonMember["organization"] = org
+                # Python 2: Using smart_str to deal with encodings
+                jsonMember["location"] = smart_str(jsonMember['location'])
+                jsonMember["name"] = smart_str(jsonMember['name'])
+                jsonMember["company"] = smart_str(jsonMember['company'])
+                jsonMember["email"] = smart_str(jsonMember['email'])
+                jsonMembersInfo_list.append(jsonMember)
     generate_csv("members-info", jsonMembersInfo_list, columns_list)
 
 
@@ -269,15 +293,18 @@ def get_starred_repos(org_list):
         print('\nGetting members of', org)
         jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                 "/members?per_page=100")
-        for member in jsonMembers:
-            print('Getting starred repositories of', member['login'])
-            jsonStarred = load_json("https://api.github.com/users/" +
-                                    member['login'] + "/starred")
-            for repo in jsonStarred:
-                repo['user'] = member['login']
-                # Python 2: Using smart_str to deal with encodings
-                repo['description'] = smart_str(repo['description'])
-                jsonMembersStarred_list.append(repo)
+        for page in range(len(jsonMembers)):
+            for member in jsonMembers[page]:
+                print('Getting starred repositories of', member['login'])
+                jsonStarred = load_json("https://api.github.com/users/" +
+                                        member['login'] +
+                                        "/starred?per_page=100")
+                for starred_page in range(len(jsonStarred)):
+                    for repo in jsonStarred[starred_page]:
+                        repo['user'] = member['login']
+                        # Python 2: Using smart_str to deal with encodings
+                        repo['description'] = smart_str(repo['description'])
+                        jsonMembersStarred_list.append(repo)
     generate_csv("starred-list", jsonMembersStarred_list, columns_list)
 
 
@@ -296,40 +323,48 @@ def generate_follower_network(org_list, network_type=""):
             print("\nGetting members of", org)
             jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                     "/members?per_page=100")
-            for member in jsonMembers:
-                members_list.append(member['login'])
+            for page in range(len(jsonMembers)):
+                for member in jsonMembers[page]:
+                    members_list.append(member['login'])
 
     graph = nx.DiGraph()
     for org in org_list:
         print("\nGetting members of", org)
         jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                 "/members?per_page=100")
-        for member in jsonMembers:
-            jsonMembersFollowers = load_json("https://api.github.com/users/" +
-                                             member["login"] +
-                                             "/followers?per_page=100")
-            jsonMembersFollowing = load_json("https://api.github.com/users/" +
-                                             member["login"] +
-                                             "/following?per_page=100")
-            print('Getting follower network of', member['login'])
-            graph.add_node(member['login'], organization=org)
-            if network_type == "full":
-                for follower in jsonMembersFollowers:
-                    graph.add_edge(follower['login'], member['login'],
-                                   organization=org)
-                for following in jsonMembersFollowing:
-                    graph.add_edge(member['login'], following['login'],
-                                   organization=org)
-            else:
-                # Generate narrow network excluding non-members
-                for follower in jsonMembersFollowers:
-                    if follower['login'] in members_list:
-                        graph.add_edge(follower['login'], member['login'],
-                                       organization=org)
-                for following in jsonMembersFollowing:
-                    if following['login'] in members_list:
-                        graph.add_edge(member['login'], following['login'],
-                                       organization=org)
+        for members_page in range(len(jsonMembers)):
+            for member in jsonMembers[members_page]:
+                jsonMembersFollowers = load_json("https://api.github.com/"
+                                                 "users/" + member["login"] +
+                                                 "/followers?per_page=100")
+                jsonMembersFollowing = load_json("https://api.github.com/"
+                                                 "users/" + member["login"] +
+                                                 "/following?per_page=100")
+                print('Getting follower network of', member['login'])
+                graph.add_node(member['login'], organization=org)
+                if network_type == "full":
+                    for follower_page in range(len(jsonMembersFollowers)):
+                        for follower in jsonMembersFollowers[follower_page]:
+                            graph.add_edge(follower['login'], member['login'],
+                                           organization=org)
+                    for following_page in range(len(jsonMembersFollowing)):
+                        for following in jsonMembersFollowing[following_page]:
+                            graph.add_edge(member['login'], following['login'],
+                                           organization=org)
+                else:
+                    # Generate narrow network excluding non-members
+                    for follower_page in range(len(jsonMembersFollowers)):
+                        for follower in jsonMembersFollowers[follower_page]:
+                            if follower['login'] in members_list:
+                                graph.add_edge(follower['login'],
+                                               member['login'],
+                                               organization=org)
+                    for following_page in range(len(jsonMembersFollowing)):
+                        for following in jsonMembersFollowing[following_page]:
+                            if following['login'] in members_list:
+                                graph.add_edge(member['login'],
+                                               following['login'],
+                                               organization=org)
     nx.write_gexf(graph, "data/" + network_type + "-follower-network_" +
                   time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
     print("\nSaved graph file: data/" + network_type + "-follower-network_" +
@@ -344,14 +379,17 @@ def generate_memberships(org_list):
     for org in org_list:
         jsonMembers = load_json("https://api.github.com/orgs/" + org +
                                 "/members?per_page=100")
-        for member in jsonMembers:
-            print("Getting membership of", member['login'])
-            graph.add_node(member['login'], node_type='user')
-            jsonMemberships = load_json("https://api.github.com/users/" +
-                                        member['login'] + "/orgs")
-            for organization in jsonMemberships:
-                graph.add_edge(member['login'], organization['login'],
-                               node_type='organization')
+        for page in range(len(jsonMembers)):
+            for member in jsonMembers[page]:
+                print("Getting membership of", member['login'])
+                graph.add_node(member['login'], node_type='user')
+                jsonMemberships = load_json("https://api.github.com/users/" +
+                                            member['login'] +
+                                            "/orgs?per_page=100")
+                for membership_page in range(len(jsonMemberships)):
+                    for organization in jsonMemberships[membership_page]:
+                        graph.add_edge(member['login'], organization['login'],
+                                       node_type='organization')
     nx.write_gexf(graph, 'data/membership-network_' +
                   time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
     print("\nSaved graph file: data/membership-network_" +
