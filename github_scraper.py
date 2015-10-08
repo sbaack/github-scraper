@@ -125,7 +125,6 @@ def get_repos(org_list):
         print("\nScraping repositories of", org)
         jsonRepo = load_json("https://api.github.com/orgs/" + org +
                              "/repos?per_page=100")
-        # for page in range(len(jsonRepo)):
         for repo in jsonRepo:
             # Add field for org to make CSV file more useful
             repo['organization'] = org
