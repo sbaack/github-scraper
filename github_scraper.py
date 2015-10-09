@@ -185,16 +185,10 @@ def get_contributors(org_list):
                     contributor["repository"] = repo["name"]
                     jsonContributor_list.append(contributor)
             except:
-                # If repository is empty, fill out the rows with "N/A"
-                print("Repository '" + repo["name"] +
-                      " returned an error, possibly because it's empty.")
-                contributor['organization'] = org
-                contributor['repository'] = repo["name"]
-                contributor['login'] = "N/A"
-                contributor['contributions'] = "N/A"
-                contributor['html_url'] = "N/A"
-                contributor['url'] = "N/A"
-            continue
+                # if repository is empty inform user and pass
+                print("Repository '" + repo["name"] + "' returned an error,"
+                      "possibly because it's empty.")
+                pass
     generate_csv("contributor-list", jsonContributor_list, columns_list)
     nx.write_gexf(graph, "data/contributor-network_" +
                   time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
