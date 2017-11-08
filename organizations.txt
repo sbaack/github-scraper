@@ -42,7 +42,6 @@ govdelivery
 govlab
 govtrack
 granicus
-granoproject
 hasadna
 hhba
 hutspace
