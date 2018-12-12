@@ -87,6 +87,10 @@ def load_json(url, memberscrape=False):
     pages of the API and returns a list of dicts."""
     if memberscrape:
         r = requests.get(url, auth=(username, api_token))
+        if r.status_code != 200:
+            print("Issue processing url: " + url)
+            print("Skipping...")
+            continue
         jsonData = json.loads(r.text)
         return jsonData
     else:
@@ -96,6 +100,10 @@ def load_json(url, memberscrape=False):
         while page_not_empty:
             r = requests.get(url + "&page=" + str(page), auth=(username,
                                                                api_token))
+            if r.status_code != 200:
+                print("Issue processing url: " + url)
+                print("Skipping...")
+                continue
             jsonData = json.loads(r.text)
             if jsonData == []:
                 page_not_empty = False
