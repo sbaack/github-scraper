@@ -8,7 +8,7 @@ except NameError:
     pass
 
 import json
-import csv
+import unicodecsv as csv
 import requests
 import time
 from sys import exit
