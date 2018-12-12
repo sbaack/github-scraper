@@ -117,7 +117,7 @@ def load_json(url, memberscrape=False):
 def generate_csv(type, json_list, columns_list):
     """Helper function to write CSV file."""
     with open("data/" + type + "_" + time.strftime("%Y-%m-%d_%H:%M:%S") +
-              ".csv", 'a+') as f:
+              ".csv", 'a+', encoding='utf-8') as f:
         csv_file = csv.DictWriter(f, fieldnames=columns_list,
                                   extrasaction="ignore")
         csv_file.writeheader()
