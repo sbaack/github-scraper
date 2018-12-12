@@ -90,7 +90,7 @@ def load_json(url, memberscrape=False):
         if r.status_code != 200:
             print("Issue processing url: " + url)
             print("Skipping...")
-            continue
+            return {}
         jsonData = json.loads(r.text)
         return jsonData
     else:
@@ -103,7 +103,7 @@ def load_json(url, memberscrape=False):
             if r.status_code != 200:
                 print("Issue processing url: " + url)
                 print("Skipping...")
-                continue
+                return {}
             jsonData = json.loads(r.text)
             if jsonData == []:
                 page_not_empty = False
