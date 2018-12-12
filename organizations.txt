@@ -56,7 +56,6 @@ littlesis-org
 medialab
 muckrock
 mysociety
-neo
 nzherald
 odpe
 okfde
@@ -80,12 +79,12 @@ poderomedia
 poderopedia
 poplus
 propublica
-pudo
+public-accountability
+pudo-attic
 pwyf
 regardscitoyens
 seegno
 sinar
-skomputer
 slashroots
 sobanukirwa
 structr
