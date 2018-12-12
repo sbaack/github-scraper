@@ -8,7 +8,7 @@ except NameError:
     pass
 
 import json
-import unicodecsv as csv
+import csv
 import requests
 import time
 from sys import exit
@@ -38,10 +38,11 @@ def start():
     # Read list of organizations from file
     print("\nReading list of organizations from file.\n")
     org_list = []
-    with open('organizations.txt', 'r') as f:
-        for line in f:
+    with open('organizations.csv', 'r', encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
             # Using rstrip to remove the newline escape sequences
-            org_list.append(line.rstrip('\n'))
+            org_list.append(row['github_org'])
     print("Will scrape data from the following organizations:", *org_list)
     # Let user specify an operation
     print("")
