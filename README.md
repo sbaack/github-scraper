@@ -15,10 +15,23 @@ The scraper can do the following:
 
 ## How to use
 
-1. Open `config.json` and add your GitHub user name and your [personal access token](https://github.com/settings/tokens) to access the GitHub API.
-2. Open `organizations.txt` and add the user account names of the organizations you want to scrape -- one organization per line! For example, if you want to scrape [mySociety](https://github.com/mysociety), [Open Knowledge](https://github.com/okfn), and [Ushahidi](https://github.com/ushahidi), your list will look like this:
+### Setup
+
+We recommend using `pipenv` to keep your work isolated. (These steps are
+noted and optional.)
 
 ```
+cd github-scraper
+pipenv install #pipenv
+# Run this each time you start a new terminal session
+pipenv shell
+```
+
+1. Open `config.json` and add your GitHub user name and your [personal access token](https://github.com/settings/tokens) to access the GitHub API.
+2. Open `organizations.csv` and add the user account names of the organizations you want to scrape -- one organization per line! For example, if you want to scrape [mySociety](https://github.com/mysociety), [Open Knowledge](https://github.com/okfn), and [Ushahidi](https://github.com/ushahidi), your list will look like this:
+
+```
+github_org,tags
 mysociety
 okfn
 ushahidi
@@ -26,4 +39,5 @@ ushahidi
 
 3. Start the scraper with `python github_scaper.py` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). The results will be stored in the `data` subfolder.
 
-If you cannot run the script, required packages might be missing. Install via `[sudo] pip install -r requirements.txt`.
+If you would like to skip archived repos, set envvar to
+`GHSCRAPER_SKIP_ARCHIVED=1`.

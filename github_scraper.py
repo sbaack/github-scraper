@@ -7,6 +7,7 @@ try:
 except NameError:
     pass
 
+import os
 import json
 import csv
 import requests
@@ -16,6 +17,8 @@ import networkx as nx
 # For Python 2: Using smart_str to deal with utf-8 encoded text in CSVs
 from django.utils.encoding import smart_str
 
+is_truthy = lambda s: s.lower() in ['y', 'yes', 'true', '1']
+SKIP_ARCHIVED = is_truthy(os.environ['GHSCRAPER_SKIP_ARCHIVED'])
 
 def start():
     """Getting started by loading GitHub user name and API token, reading list
@@ -175,6 +178,9 @@ def get_contributors(org_list):
         jsonRepo = load_json("https://api.github.com/orgs/" + org +
                              "/repos?per_page=100")
         for repo in jsonRepo:
+            if SKIP_ARCHIVED and repo['archived']:
+                print("Skipping repo: ", repo["name"])
+                continue
             # try...except to deal with empty repositories
             try:
                 print("Getting contributors of", repo["name"])
