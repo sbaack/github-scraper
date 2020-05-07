@@ -329,4 +329,5 @@ def generate_memberships(org_list):
     print("\nSaved graph file: data/membership-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
 
 
-start()
+if __name__ == "__main__":
+    start()
