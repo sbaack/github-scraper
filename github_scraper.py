@@ -99,15 +99,13 @@ def load_json(url, memberscrape=False):
 
 def generate_csv(type, json_list, columns_list):
     """Helper function to write CSV file."""
-    with open("data/" + type + "_" + time.strftime("%Y-%m-%d_%H:%M:%S") +
-              ".csv", 'a+') as f:
+    with open("data/" + type + "_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".csv", 'a+') as f:
         csv_file = csv.DictWriter(f, fieldnames=columns_list,
                                   extrasaction="ignore")
         csv_file.writeheader()
         for item in json_list:
             csv_file.writerow(item)
-    print("\nCSV file saved as data/" + type + "_" +
-          time.strftime("%Y-%m-%d_%H:%M:%S") + ".csv")
+    print("\nCSV file saved as data/" + type + "_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".csv")
 
 
 def get_repos(org_list):
@@ -115,25 +113,24 @@ def get_repos(org_list):
     jsonRepos = []
     for org in org_list:
         print("\nScraping repositories of", org)
-        jsonRepo = load_json("https://api.github.com/orgs/" + org +
-                             "/repos?per_page=100")
+        jsonRepo = load_json("https://api.github.com/orgs/" + org + "/repos?per_page=100")
         for repo in jsonRepo:
             # Add field for org to make CSV file more useful
             repo['organization'] = org
             jsonRepos.append(repo)
     # Create a list with the items I'm interested in, then call generate_csv
     columns_list = [
-                    'organization',
-                    'name',
-                    'full_name',
-                    'stargazers_count',
-                    'language',
-                    'created_at',
-                    'updated_at',
-                    'homepage',
-                    'fork',
-                    'description'
-                    ]
+        'organization',
+        'name',
+        'full_name',
+        'stargazers_count',
+        'language',
+        'created_at',
+        'updated_at',
+        'homepage',
+        'fork',
+        'description'
+    ]
     generate_csv("repo-list", jsonRepos, columns_list)
 
 
@@ -144,17 +141,16 @@ def get_contributors(org_list):
     jsonContributor_list = []
     graph = nx.DiGraph()
     columns_list = [
-                    'organization',
-                    'repository',
-                    'login',
-                    'contributions',
-                    'html_url',
-                    'url'
-                    ]
+        'organization',
+        'repository',
+        'login',
+        'contributions',
+        'html_url',
+        'url'
+    ]
     for org in org_list:
         print('\nScraping contributors of', org)
-        jsonRepo = load_json("https://api.github.com/orgs/" + org +
-                             "/repos?per_page=100")
+        jsonRepo = load_json("https://api.github.com/orgs/" + org + "/repos?per_page=100")
         for repo in jsonRepo:
             # try...except to deal with empty repositories
             try:
@@ -163,9 +159,7 @@ def get_contributors(org_list):
                 graph.add_node(repo['name'], organization=org)
                 # Then get a list of contributors
                 jsonContributors = load_json("https://api.github.com/"
-                                             "repos/" + org + "/" +
-                                             repo["name"] +
-                                             "/contributors?per_page=100")
+                                             "repos/" + org + "/" + repo["name"] + "/contributors?per_page=100")
                 for contributor in jsonContributors:
                     # Add each contributor as an edge to the graph
                     graph.add_edge(contributor['login'], repo['name'],
@@ -180,10 +174,8 @@ def get_contributors(org_list):
                       "possibly because it's empty.")
                 pass
     generate_csv("contributor-list", jsonContributor_list, columns_list)
-    nx.write_gexf(graph, "data/contributor-network_" +
-                  time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
-    print("\nSaved graph file: data/contributor-network_" +
-          time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
+    nx.write_gexf(graph, "data/contributor-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
+    print("\nSaved graph file: data/contributor-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
 
 
 def get_members_repos(org_list):
@@ -192,24 +184,21 @@ def get_members_repos(org_list):
     print("\nGetting repositories of all members.")
     jsonMembersRepo_list = []
     columns_list = [
-                    'organization',
-                    'user',
-                    'full_name',
-                    'fork',
-                    'stargazers_count',
-                    'forks_count',
-                    'language',
-                    'description'
-                    ]
+        'organization',
+        'user',
+        'full_name',
+        'fork',
+        'stargazers_count',
+        'forks_count',
+        'language',
+        'description'
+    ]
     for org in org_list:
         print('\nGetting members of', org)
-        jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                "/members?per_page=100")
+        jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
         for member in jsonMembers:
             print('Getting repositories of', member['login'])
-            jsonMembersRepos = load_json("https://api.github.com/users/" +
-                                         member['login'] +
-                                         "/repos?per_page=100")
+            jsonMembersRepos = load_json("https://api.github.com/users/" + member['login'] + "/repos?per_page=100")
             for repo in jsonMembersRepos:
                 # Add fields to make CSV file more usable
                 repo['organization'] = org
@@ -224,24 +213,22 @@ def get_members_info(org_list):
     print("\nGetting user information of all members.")
     jsonMembersInfo_list = []
     columns_list = [
-                    'organization',
-                    'login',
-                    'name',
-                    'url',
-                    'type',
-                    'company',
-                    'blog',
-                    'location',
-                    'email'
-                    ]
+        'organization',
+        'login',
+        'name',
+        'url',
+        'type',
+        'company',
+        'blog',
+        'location',
+        'email'
+    ]
     for org in org_list:
         print('\nGetting members of', org)
-        jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                "/members?per_page=100")
+        jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
         for member in jsonMembers:
             print("Getting user information for", member["login"])
-            jsonMember = load_json("https://api.github.com/users/" +
-                                   member["login"] + "?per_page=100",
+            jsonMember = load_json("https://api.github.com/users/" + member["login"] + "?per_page=100",
                                    memberscrape=True)
             # Add field to make CSV file more usable
             jsonMember["organization"] = org
@@ -255,22 +242,19 @@ def get_starred_repos(org_list):
     print("\nGetting repositories starred by members.")
     jsonMembersStarred_list = []
     columns_list = [
-                    'organization',
-                    'user',
-                    'full_name',
-                    'html_url',
-                    'language',
-                    'description'
-                    ]
+        'organization',
+        'user',
+        'full_name',
+        'html_url',
+        'language',
+        'description'
+    ]
     for org in org_list:
         print('\nGetting members of', org)
-        jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                "/members?per_page=100")
+        jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
         for member in jsonMembers:
             print('Getting starred repositories of', member['login'])
-            jsonStarred = load_json("https://api.github.com/users/" +
-                                    member['login'] +
-                                    "/starred?per_page=100")
+            jsonStarred = load_json("https://api.github.com/users/" + member['login'] + "/starred?per_page=100")
             for repo in jsonStarred:
                 repo['organization'] = org
                 repo['user'] = member['login']
@@ -291,23 +275,19 @@ def generate_follower_network(org_list, network_type=""):
         members_list = []
         for org in org_list:
             print("\nGetting members of", org)
-            jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                    "/members?per_page=100")
+            jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
             for member in jsonMembers:
                 members_list.append(member['login'])
 
     graph = nx.DiGraph()
     for org in org_list:
         print("\nGetting members of", org)
-        jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                "/members?per_page=100")
+        jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
         for member in jsonMembers:
             jsonMembersFollowers = load_json("https://api.github.com/"
-                                             "users/" + member["login"] +
-                                             "/followers?per_page=100")
+                                             "users/" + member["login"] + "/followers?per_page=100")
             jsonMembersFollowing = load_json("https://api.github.com/"
-                                             "users/" + member["login"] +
-                                             "/following?per_page=100")
+                                             "users/" + member["login"] + "/following?per_page=100")
             print('Getting follower network of', member['login'])
             graph.add_node(member['login'], organization=org)
             if network_type == "full":
@@ -327,10 +307,8 @@ def generate_follower_network(org_list, network_type=""):
                     if following['login'] in members_list:
                         graph.add_edge(member['login'], following['login'],
                                        organization=org)
-    nx.write_gexf(graph, "data/" + network_type + "-follower-network_" +
-                  time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
-    print("\nSaved graph file: data/" + network_type + "-follower-network_" +
-          time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
+    nx.write_gexf(graph, "data/" + network_type + "-follower-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
+    print("\nSaved graph file: data/" + network_type + "-follower-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
 
 
 def generate_memberships(org_list):
@@ -339,20 +317,16 @@ def generate_memberships(org_list):
     print("\nGenerating network of memberships.")
     graph = nx.DiGraph()
     for org in org_list:
-        jsonMembers = load_json("https://api.github.com/orgs/" + org +
-                                "/members?per_page=100")
+        jsonMembers = load_json("https://api.github.com/orgs/" + org + "/members?per_page=100")
         for member in jsonMembers:
             print("Getting membership of", member['login'])
             graph.add_node(member['login'], node_type='user')
-            jsonMemberships = load_json("https://api.github.com/users/" +
-                                        member['login'] + "/orgs?per_page=100")
+            jsonMemberships = load_json("https://api.github.com/users/" + member['login'] + "/orgs?per_page=100")
             for organization in jsonMemberships:
                 graph.add_edge(member['login'], organization['login'],
                                node_type='organization')
-    nx.write_gexf(graph, 'data/membership-network_' +
-                  time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
-    print("\nSaved graph file: data/membership-network_" +
-          time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
+    nx.write_gexf(graph, 'data/membership-network_' + time.strftime("%Y-%m-%d_%H:%M:%S") + '.gexf')
+    print("\nSaved graph file: data/membership-network_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".gexf")
 
 
 start()
