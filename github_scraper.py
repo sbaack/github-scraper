@@ -1,20 +1,12 @@
 # -*- coding: utf-8 -*-
-# To make code compatible with both Python 2 and 3: import __future__ print
-# function and map raw_input to input if Python 2 is used
-from __future__ import print_function
-try:
-    input = raw_input
-except NameError:
-    pass
 
-import json
 import csv
-import requests
+import json
 import time
 from sys import exit
+
 import networkx as nx
-# For Python 2: Using smart_str to deal with utf-8 encoded text in CSVs
-from django.utils.encoding import smart_str
+import requests
 
 
 def start():
@@ -128,8 +120,6 @@ def get_repos(org_list):
         for repo in jsonRepo:
             # Add field for org to make CSV file more useful
             repo['organization'] = org
-            # Python 2: Using smart_str to deal with encodings
-            repo['description'] = smart_str(repo['description'])
             jsonRepos.append(repo)
     # Create a list with the items I'm interested in, then call generate_csv
     columns_list = [
@@ -224,8 +214,6 @@ def get_members_repos(org_list):
                 # Add fields to make CSV file more usable
                 repo['organization'] = org
                 repo['user'] = member['login']
-                # Python 2: Using smart_str to deal with encodings
-                repo['description'] = smart_str(repo['description'])
                 jsonMembersRepo_list.append(repo)
     generate_csv("members-list", jsonMembersRepo_list, columns_list)
 
@@ -257,11 +245,6 @@ def get_members_info(org_list):
                                    memberscrape=True)
             # Add field to make CSV file more usable
             jsonMember["organization"] = org
-            # Python 2: Using smart_str to deal with encodings
-            jsonMember["location"] = smart_str(jsonMember['location'])
-            jsonMember["name"] = smart_str(jsonMember['name'])
-            jsonMember["company"] = smart_str(jsonMember['company'])
-            jsonMember["email"] = smart_str(jsonMember['email'])
             jsonMembersInfo_list.append(jsonMember)
     generate_csv("members-info", jsonMembersInfo_list, columns_list)
 
@@ -291,8 +274,6 @@ def get_starred_repos(org_list):
             for repo in jsonStarred:
                 repo['organization'] = org
                 repo['user'] = member['login']
-                # Python 2: Using smart_str to deal with encodings
-                repo['description'] = smart_str(repo['description'])
                 jsonMembersStarred_list.append(repo)
     generate_csv("starred-list", jsonMembersStarred_list, columns_list)
 
