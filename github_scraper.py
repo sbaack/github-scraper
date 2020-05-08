@@ -15,6 +15,7 @@ def select_options():
     of organizations and letting user choose an operation."""
     # Try to read username and api_token
     global username, api_token
+    # Try to read username and api_token
     try:
         with open('config.json', 'r') as f:
             config = json.load(f)
@@ -37,24 +38,23 @@ def select_options():
             org_list.append(line.rstrip('\n'))
     print("Will scrape data from the following organizations:", *org_list)
     # Let user specify an operation
-    print("")
-    print("Please choose an operation (you can select multiple options by "
-          "entering several number separated by commas):\n")
-    print("1. Get a list of the organizations' repositories (CSV)")
-    print("2. Get all contributors of the organizations' repositories"
-          "(CSV and GEXF).")
-    print("3. Get a list of the repositories of all the members of the "
-          "organizations (CSV)")
-    print("4. Get information for each member of the organizations (CSV)")
-    print("5. Generate spreadsheet for starred repositories (CSV)")
-    print("6. Generate a full follower network (GEXF)")
-    print("7. Generate a narrow follower network (only includes members of the"
-          "organizations) (GEXF)")
-    print("8. Generate a graph illustrating the membership structures (GEXF)")
-    print("")
-    operations = input()
+    print("""
+    1. Get a list of the organizations' repositories (CSV)
+    2. Get all contributors of the organizations' repositories (CSV and GEXF).
+    3. Get a list of the repositories of all the members of the organizations (CSV).
+    4. Get information for each member of the organizations (CSV).
+    5. Generate spreadsheet for starred repositories (CSV).
+    6. Generate a full follower network (GEXF).
+    7. Generate a narrow follower network (only includes members of the organizations) (GEXF).
+    8. Generate a graph illustrating the membership structures (GEXF).
+    """)
+    operations = input(
+        "Choose options. To select all, type 'All'. To select multiple, use comma separated list.\n> "
+    )
+    operations = operations.lower()
+    if operations == 'all':
+        operations = "1, 2, 3, 4, 5, 6, 7, 8"
     operations_input = operations.split(', ')
-    # TODO: Better function mapping to handle optional arguments?
     operations_dict = {
         1: get_repos,
         2: get_contributors,
