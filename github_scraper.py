@@ -25,7 +25,7 @@ def setup():
             USER_NAME = config['user_name']
             API_TOKEN = config['api_token']
             if USER_NAME == "" or API_TOKEN == "":
-                exit(1)
+                raise KeyError
             else:
                 print(f"User name: {USER_NAME}")
                 print(f"Api token: {API_TOKEN}")
