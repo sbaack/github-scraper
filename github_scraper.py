@@ -316,7 +316,7 @@ def generate_follower_network(org_list: List, network_type: str = ""):
         # Getting a list of all members if narrow graph is chosen
         members_list = []
         for org in org_list:
-            print(f"\nGetting members of {org}")
+            print(f"\nGetting members of specified organizations to filter network...")
             jsonMembers = load_json(
                 f"https://api.github.com/orgs/{org}/members?per_page=100"
             )
