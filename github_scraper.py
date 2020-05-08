@@ -4,6 +4,7 @@ import csv
 import json
 import time
 from sys import exit
+from typing import List
 
 import networkx as nx
 import requests
@@ -75,12 +76,12 @@ def select_options():
             operations_dict[int(operation)](org_list)
 
 
-def load_json(url, memberscrape=False):
-    # TODO: Add error handling if request fails (e.g. if repo was not found)
+def load_json(url: str, memberscrape: bool = False):
     """Load json file using requests.
 
     Iterates over the pages of the API and returns a list of dicts.
     """
+    # TODO: Add error handling if request fails (e.g. if repo was not found)
     if memberscrape:
         r = requests.get(
             url,
@@ -106,7 +107,7 @@ def load_json(url, memberscrape=False):
         return jsonList
 
 
-def generate_csv(type, json_list, columns_list):
+def generate_csv(type: str, json_list: List, columns_list: List):
     """Write CSV file."""
     with open(
         f"data/{type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv",
@@ -125,7 +126,7 @@ def generate_csv(type, json_list, columns_list):
     )
 
 
-def get_repos(org_list):
+def get_repos(org_list: List):
     """Create list of the organizations' repositories."""
     jsonRepos = []
     for org in org_list:
@@ -153,7 +154,7 @@ def get_repos(org_list):
     generate_csv("repo-list", jsonRepos, columns_list)
 
 
-def get_contributors(org_list):
+def get_contributors(org_list: List):
     """Create list of contributors to the organizations' repositories."""
     print("\nCreating list of contributors.")
     jsonContributor_list = []
@@ -208,7 +209,7 @@ def get_contributors(org_list):
     )
 
 
-def get_members_repos(org_list):
+def get_members_repos(org_list: List):
     """Create list of all the members of an organization and their repositories."""
     print("\nGetting repositories of all members.")
     jsonMembersRepo_list = []
@@ -240,7 +241,7 @@ def get_members_repos(org_list):
     generate_csv("members-list", jsonMembersRepo_list, columns_list)
 
 
-def get_members_info(org_list):
+def get_members_info(org_list: List):
     """Gather information about the organizations' members."""
     print("\nGetting user information of all members.")
     jsonMembersInfo_list = []
@@ -271,7 +272,7 @@ def get_members_info(org_list):
     generate_csv("members-info", jsonMembersInfo_list, columns_list)
 
 
-def get_starred_repos(org_list):
+def get_starred_repos(org_list: List):
     """Create list of all the repositories starred by organizations' members."""
     print("\nGetting repositories starred by members.")
     jsonMembersStarred_list = []
@@ -300,7 +301,7 @@ def get_starred_repos(org_list):
     generate_csv("starred-list", jsonMembersStarred_list, columns_list)
 
 
-def generate_follower_network(org_list, network_type=""):
+def generate_follower_network(org_list: List, network_type: str = ""):
     """Create full or narrow follower networks of organizations' members.
 
     First, get every user following the members of organizations (followers)
@@ -375,7 +376,7 @@ def generate_follower_network(org_list, network_type=""):
     )
 
 
-def generate_memberships(org_list):
+def generate_memberships(org_list: List):
     """Take all the members of the organizations and generate a directed graph.
 
     This shows creates a network with the organizational memberships.
