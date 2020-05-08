@@ -10,6 +10,7 @@ import requests
 
 
 def start():
+def select_options():
     """Getting started by loading GitHub user name and API token, reading list
     of organizations and letting user choose an operation."""
     # Try to read username and api_token
@@ -220,8 +221,7 @@ def get_members_info(org_list):
         'type',
         'company',
         'blog',
-        'location',
-        'email'
+        'location'
     ]
     for org in org_list:
         print('\nGetting members of', org)
@@ -330,4 +330,4 @@ def generate_memberships(org_list):
 
 
 if __name__ == "__main__":
-    start()
+    select_options()
