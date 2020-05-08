@@ -25,9 +25,9 @@ def select_options():
             if username == "" or api_token == "":
                 exit(1)
             else:
-    except:
                 print(f"User name: {username}")
                 print(f"Api token: {api_token}")
+    except (FileNotFoundError, KeyError):
         print("Failed to read user name and password in config.jon file.")
         exit(1)
     # Read list of organizations from file
