@@ -16,30 +16,33 @@ def select_options():
     Getting started by loading GitHub user name and API token, reading
     list of organizations and letting user choose an operation.
     """
-    global username, api_token
-    # Try to read username and api_token
+    global USER_NAME, API_TOKEN
+
+    # Read USER_NAME and API_TOKEN
     try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-            username = config['username']
-            api_token = config['api_token']
-            if username == "" or api_token == "":
+        with open('config.json', 'r') as file:
+            config = json.load(file)
+            USER_NAME = config['user_name']
+            API_TOKEN = config['api_token']
+            if USER_NAME == "" or API_TOKEN == "":
                 exit(1)
             else:
-                print(f"User name: {username}")
-                print(f"Api token: {api_token}")
+                print(f"User name: {USER_NAME}")
+                print(f"Api token: {API_TOKEN}")
     except (FileNotFoundError, KeyError):
         print("Failed to read user name and password in config.jon file.")
         exit(1)
+
     # Read list of organizations from file
     print("\nReading list of organizations from file.\n")
     org_list = []
-    with open('organizations.txt', 'r') as f:
-        for line in f:
+    with open('organizations.txt', 'r') as file:
+        for line in file:
             # Using rstrip to remove the newline escape sequences
             org_list.append(line.rstrip('\n'))
+
+    # Show menu
     print("Will scrape data from the following organizations:", *org_list)
-    # Let user specify an operation
     print("""
     1. Get a list of the organizations' repositories (CSV)
     2. Get all contributors of the organizations' repositories (CSV and GEXF).
@@ -51,8 +54,10 @@ def select_options():
     8. Generate a graph illustrating the membership structures (GEXF).
     """)
     operations = input(
-        "Choose options. To select all, type 'All'. To select multiple, use comma separated list.\n> "
+        "Choose options. Select multiple with comma separated list or 'All'.\n> "
     )
+
+    # Read input and start specified operations
     operations = operations.lower()
     if operations == 'all':
         operations = "1, 2, 3, 4, 5, 6, 7, 8"
@@ -83,38 +88,38 @@ def load_json(url: str, memberscrape: bool = False):
     """
     # TODO: Add error handling if request fails (e.g. if repo was not found)
     if memberscrape:
-        r = requests.get(
+        request = requests.get(
             url,
-            auth=(username, api_token)
+            auth=(USER_NAME, API_TOKEN)
         )
-        jsonData = json.loads(r.text)
-        return jsonData
-    else:
-        page = 1
-        jsonList = []
-        page_not_empty = True
-        while page_not_empty:
-            r = requests.get(
-                f"{url}&page={str(page)}",
-                auth=(username, api_token)
-            )
-            jsonData = json.loads(r.text)
-            if jsonData == []:
-                page_not_empty = False
-            else:
-                jsonList.extend(jsonData)
-                page += 1
-        return jsonList
+        json_data = json.loads(request.text)
+        return json_data
+
+    page = 1
+    json_list = []
+    page_not_empty = True
+    while page_not_empty:
+        request = requests.get(
+            f"{url}&page={str(page)}",
+            auth=(USER_NAME, API_TOKEN)
+        )
+        json_data = json.loads(request.text)
+        if json_data == []:
+            page_not_empty = False
+        else:
+            json_list.extend(json_data)
+            page += 1
+    return json_list
 
 
-def generate_csv(type: str, json_list: List, columns_list: List):
+def generate_csv(data_type: str, json_list: List, columns_list: List):
     """Write CSV file."""
     with open(
-        f"data/{type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv",
-        'a+'
-    ) as f:
+            f"data/{data_type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv",
+            'a+'
+    ) as file:
         csv_file = csv.DictWriter(
-            f,
+            file,
             fieldnames=columns_list,
             extrasaction="ignore"
         )
@@ -122,22 +127,23 @@ def generate_csv(type: str, json_list: List, columns_list: List):
         for item in json_list:
             csv_file.writerow(item)
     print(
-        f"\nCSV file saved as data/{type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv"
+        f"\nCSV file saved as data/{data_type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv"
     )
 
 
 def get_repos(org_list: List):
     """Create list of the organizations' repositories."""
-    jsonRepos = []
+    # TODO: Create helper function to load API pages
+    json_repos = []
     for org in org_list:
         print(f"\nScraping repositories of {org}")
-        jsonRepo = load_json(
+        json_repo = load_json(
             f"https://api.github.com/orgs/{org}/repos?per_page=100"
         )
-        for repo in jsonRepo:
+        for repo in json_repo:
             # Add field for org to make CSV file more useful
             repo['organization'] = org
-            jsonRepos.append(repo)
+            json_repos.append(repo)
     # Create a list with the items I'm interested in, then call generate_csv
     columns_list = [
         'organization',
@@ -151,13 +157,13 @@ def get_repos(org_list: List):
         'fork',
         'description'
     ]
-    generate_csv("repo-list", jsonRepos, columns_list)
+    generate_csv("repo-list", json_repos, columns_list)
 
 
 def get_contributors(org_list: List):
     """Create list of contributors to the organizations' repositories."""
     print("\nCreating list of contributors.")
-    jsonContributor_list = []
+    json_contributors_all = []
     graph = nx.DiGraph()
     columns_list = [
         'organization',
@@ -169,19 +175,19 @@ def get_contributors(org_list: List):
     ]
     for org in org_list:
         print(f"\nScraping contributors of {org}")
-        jsonRepo = load_json(
+        json_repo = load_json(
             f"https://api.github.com/orgs/{org}/repos?per_page=100"
         )
-        for repo in jsonRepo:
+        for repo in json_repo:
             try:
                 print(f"Getting contributors of {repo['name']}")
                 # First, add repo as a node to the graph
                 graph.add_node(repo['name'], organization=org)
                 # Then get a list of contributors
-                jsonContributors = load_json(
+                json_contributors_repo = load_json(
                     f"https://api.github.com/repos/{org}/{repo['name']}/contributors?per_page=100"
                 )
-                for contributor in jsonContributors:
+                for contributor in json_contributors_repo:
                     # Add each contributor as an edge to the graph
                     graph.add_edge(
                         contributor['login'],
@@ -191,14 +197,13 @@ def get_contributors(org_list: List):
                     # Prepare CSV and add fields to make it more usable
                     contributor["organization"] = org
                     contributor["repository"] = repo["name"]
-                    jsonContributor_list.append(contributor)
+                    json_contributors_all.append(contributor)
             except json.decoder.JSONDecodeError:
                 # If repository is empty, inform user and pass
                 print(
                     f"Repository '{repo['name']}' appears to be empty."
                 )
-                pass
-    generate_csv("contributor-list", jsonContributor_list, columns_list)
+    generate_csv("contributor-list", json_contributors_all, columns_list)
     # TODO: Use variable for name of the file
     nx.write_gexf(
         graph,
@@ -212,7 +217,7 @@ def get_contributors(org_list: List):
 def get_members_repos(org_list: List):
     """Create list of all the members of an organization and their repositories."""
     print("\nGetting repositories of all members.")
-    jsonMembersRepo_list = []
+    json_members_repos = []
     columns_list = [
         'organization',
         'user',
@@ -225,26 +230,26 @@ def get_members_repos(org_list: List):
     ]
     for org in org_list:
         print(f"\nGetting members of {org}")
-        jsonMembers = load_json(
+        json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
-        for member in jsonMembers:
+        for member in json_org_members:
             print(f"Getting repositories of {member['login']}")
-            jsonMembersRepos = load_json(
+            json_repos_members = load_json(
                 f"https://api.github.com/users/{member['login']}/repos?per_page=100"
             )
-            for repo in jsonMembersRepos:
+            for repo in json_repos_members:
                 # Add fields to make CSV file more usable
                 repo['organization'] = org
                 repo['user'] = member['login']
-                jsonMembersRepo_list.append(repo)
-    generate_csv("members-list", jsonMembersRepo_list, columns_list)
+                json_members_repos.append(repo)
+    generate_csv("members-list", json_members_repos, columns_list)
 
 
 def get_members_info(org_list: List):
     """Gather information about the organizations' members."""
     print("\nGetting user information of all members.")
-    jsonMembersInfo_list = []
+    json_members_info = []
     columns_list = [
         'organization',
         'login',
@@ -257,25 +262,25 @@ def get_members_info(org_list: List):
     ]
     for org in org_list:
         print(f"\nGetting members of {org}")
-        jsonMembers = load_json(
+        json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
-        for member in jsonMembers:
+        for member in json_org_members:
             print(f"Getting user information for {member['login']}")
-            jsonMember = load_json(
+            json_org_member = load_json(
                 f"https://api.github.com/users/{member['login']}?per_page=100",
                 memberscrape=True
             )
             # Add field to make CSV file more usable
-            jsonMember["organization"] = org
-            jsonMembersInfo_list.append(jsonMember)
-    generate_csv("members-info", jsonMembersInfo_list, columns_list)
+            json_org_member["organization"] = org
+            json_members_info.append(json_org_member)
+    generate_csv("members-info", json_members_info, columns_list)
 
 
 def get_starred_repos(org_list: List):
     """Create list of all the repositories starred by organizations' members."""
     print("\nGetting repositories starred by members.")
-    jsonMembersStarred_list = []
+    json_starred_repos_all = []
     columns_list = [
         'organization',
         'user',
@@ -286,19 +291,19 @@ def get_starred_repos(org_list: List):
     ]
     for org in org_list:
         print(f"\nGetting members of {org}")
-        jsonMembers = load_json(
+        json_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
-        for member in jsonMembers:
+        for member in json_members:
             print(f"Getting starred repositories of {member['login']}")
-            jsonStarred = load_json(
+            json_starred_repos_member = load_json(
                 f"https://api.github.com/users/{member['login']}/starred?per_page=100"
             )
-            for repo in jsonStarred:
+            for repo in json_starred_repos_member:
                 repo['organization'] = org
                 repo['user'] = member['login']
-                jsonMembersStarred_list.append(repo)
-    generate_csv("starred-list", jsonMembersStarred_list, columns_list)
+                json_starred_repos_all.append(repo)
+    generate_csv("starred-list", json_starred_repos_all, columns_list)
 
 
 def generate_follower_network(org_list: List, network_type: str = ""):
@@ -316,36 +321,36 @@ def generate_follower_network(org_list: List, network_type: str = ""):
         # Getting a list of all members if narrow graph is chosen
         members_list = []
         for org in org_list:
-            print(f"\nGetting members of specified organizations to filter network...")
-            jsonMembers = load_json(
+            print("\nGetting members of specified organizations to filter network...")
+            json_org_members = load_json(
                 f"https://api.github.com/orgs/{org}/members?per_page=100"
             )
-            for member in jsonMembers:
+            for member in json_org_members:
                 members_list.append(member['login'])
 
     graph = nx.DiGraph()
     for org in org_list:
         print(f"\nGetting members of {org}")
-        jsonMembers = load_json(
+        json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
-        for member in jsonMembers:
-            jsonMembersFollowers = load_json(
+        for member in json_org_members:
+            json_followers = load_json(
                 f"https://api.github.com/users/{member['login']}/followers?per_page=100"
             )
-            jsonMembersFollowing = load_json(
+            json_followings = load_json(
                 f"https://api.github.com/users/{member['login']}/following?per_page=100"
             )
             print(f"Getting follower network of {member['login']}")
             graph.add_node(member['login'], organization=org)
             if network_type == "full":
-                for follower in jsonMembersFollowers:
+                for follower in json_followers:
                     graph.add_edge(
                         follower['login'],
                         member['login'],
                         organization=org
                     )
-                for following in jsonMembersFollowing:
+                for following in json_followings:
                     graph.add_edge(
                         member['login'],
                         following['login'],
@@ -353,14 +358,14 @@ def generate_follower_network(org_list: List, network_type: str = ""):
                     )
             else:
                 # Generate narrow network excluding non-members
-                for follower in jsonMembersFollowers:
+                for follower in json_followers:
                     if follower['login'] in members_list:
                         graph.add_edge(
                             follower['login'],
                             member['login'],
                             organization=org
                         )
-                for following in jsonMembersFollowing:
+                for following in json_followings:
                     if following['login'] in members_list:
                         graph.add_edge(
                             member['login'],
@@ -372,7 +377,8 @@ def generate_follower_network(org_list: List, network_type: str = ""):
         f"data/{network_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
     )
     print(
-        f"\nSaved graph file: data/{network_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+        "\nSaved graph file: data/"
+        f"{network_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
     )
 
 
@@ -384,16 +390,16 @@ def generate_memberships(org_list: List):
     print("\nGenerating network of memberships.")
     graph = nx.DiGraph()
     for org in org_list:
-        jsonMembers = load_json(
+        json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
-        for member in jsonMembers:
+        for member in json_org_members:
             print(f"Getting membership of {member['login']}")
             graph.add_node(member['login'], node_type='user')
-            jsonMemberships = load_json(
+            json_org_memberships = load_json(
                 f"https://api.github.com/users/{member['login']}/orgs?per_page=100"
             )
-            for organization in jsonMemberships:
+            for organization in json_org_memberships:
                 graph.add_edge(
                     member['login'],
                     organization['login'],
