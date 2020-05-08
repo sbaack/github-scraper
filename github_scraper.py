@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Scrape GitHub data for organizational accounts."""
 
 import csv
 import json
@@ -9,11 +9,12 @@ import networkx as nx
 import requests
 
 
-def start():
 def select_options():
-    """Getting started by loading GitHub user name and API token, reading list
-    of organizations and letting user choose an operation."""
-    # Try to read username and api_token
+    """Show menu that lets user select scraping option(s).
+
+    Getting started by loading GitHub user name and API token, reading
+    list of organizations and letting user choose an operation.
+    """
     global username, api_token
     # Try to read username and api_token
     try:
@@ -76,8 +77,10 @@ def select_options():
 
 def load_json(url, memberscrape=False):
     # TODO: Add error handling if request fails (e.g. if repo was not found)
-    """Helper function to load json file using requests. Iterates over the
-    pages of the API and returns a list of dicts."""
+    """Load json file using requests.
+
+    Iterates over the pages of the API and returns a list of dicts.
+    """
     if memberscrape:
         r = requests.get(url, auth=(username, api_token))
         jsonData = json.loads(r.text)
@@ -87,8 +90,7 @@ def load_json(url, memberscrape=False):
         jsonList = []
         page_not_empty = True
         while page_not_empty:
-            r = requests.get(url + "&page=" + str(page), auth=(username,
-                                                               api_token))
+            r = requests.get(url + "&page=" + str(page), auth=(username, api_token))
             jsonData = json.loads(r.text)
             if jsonData == []:
                 page_not_empty = False
@@ -99,7 +101,7 @@ def load_json(url, memberscrape=False):
 
 
 def generate_csv(type, json_list, columns_list):
-    """Helper function to write CSV file."""
+    """Write CSV file."""
     with open("data/" + type + "_" + time.strftime("%Y-%m-%d_%H:%M:%S") + ".csv", 'a+') as f:
         csv_file = csv.DictWriter(f, fieldnames=columns_list,
                                   extrasaction="ignore")
@@ -110,7 +112,7 @@ def generate_csv(type, json_list, columns_list):
 
 
 def get_repos(org_list):
-    """Generates a CSV with a list of the organizations' repositories."""
+    """Create list of the organizations' repositories."""
     jsonRepos = []
     for org in org_list:
         print("\nScraping repositories of", org)
@@ -136,8 +138,7 @@ def get_repos(org_list):
 
 
 def get_contributors(org_list):
-    """Generats a CSV listing all contributors to the organizations'
-    repositories."""
+    """Create list of contributors to the organizations' repositories."""
     print("\nCreating list of contributors.")
     jsonContributor_list = []
     graph = nx.DiGraph()
@@ -180,8 +181,7 @@ def get_contributors(org_list):
 
 
 def get_members_repos(org_list):
-    """Gets a list of all the members of an organization and their
-    repositories."""
+    """Create list of all the members of an organization and their repositories."""
     print("\nGetting repositories of all members.")
     jsonMembersRepo_list = []
     columns_list = [
@@ -209,8 +209,7 @@ def get_members_repos(org_list):
 
 
 def get_members_info(org_list):
-    """Creates a CSV with information about the members of the
-    organizations."""
+    """Gather information about the organizations' members."""
     print("\nGetting user information of all members.")
     jsonMembersInfo_list = []
     columns_list = [
@@ -237,8 +236,7 @@ def get_members_info(org_list):
 
 
 def get_starred_repos(org_list):
-    """Creates a CSV with all the repositories starred by members of the
-    organizations."""
+    """Create list of all the repositories starred by organizations' members."""
     print("\nGetting repositories starred by members.")
     jsonMembersStarred_list = []
     columns_list = [
@@ -263,10 +261,13 @@ def get_starred_repos(org_list):
 
 
 def generate_follower_network(org_list, network_type=""):
-    """Gets every user following the members of organizations (followers) and
-    the users they are following themselves (following) and generates a
-    directed graph. Only includes members of specified organizations if
-    network_type == narrow."""
+    """Create full or narrow follower networks of organizations' members.
+
+    First, get every user following the members of organizations (followers)
+    and the users they are following themselves (following). Then generate a
+    directed graph with networkx. Only includes members of specified organizations
+    if network_type == narrow.
+    """
     if network_type == "full":
         print("\nGenerating full follower network.")
     else:
@@ -312,8 +313,10 @@ def generate_follower_network(org_list, network_type=""):
 
 
 def generate_memberships(org_list):
-    """Takes all the members of the organizations and generates a directed graph
-    showing all their memberships."""
+    """Take all the members of the organizations and generate a directed graph.
+
+    This shows creates a network with the organizational memberships.
+    """
     print("\nGenerating network of memberships.")
     graph = nx.DiGraph()
     for org in org_list:
