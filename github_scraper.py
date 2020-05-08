@@ -10,13 +10,13 @@ import networkx as nx
 import requests
 
 
-def select_options():
-    """Show menu that lets user select scraping option(s).
+def setup():
+    """Get started by reading data.
 
-    Getting started by loading GitHub user name and API token, reading
-    list of organizations and letting user choose an operation.
+    Load GitHub user name and API token from config file and get
+    list of organizations to scrape from file.
     """
-    global USER_NAME, API_TOKEN
+    global USER_NAME, API_TOKEN, ORG_LIST
 
     # Read USER_NAME and API_TOKEN
     try:
@@ -35,14 +35,18 @@ def select_options():
 
     # Read list of organizations from file
     print("\nReading list of organizations from file.\n")
-    org_list = []
+    ORG_LIST = []
     with open('organizations.txt', 'r') as file:
         for line in file:
             # Using rstrip to remove the newline escape sequences
-            org_list.append(line.rstrip('\n'))
+            ORG_LIST.append(line.rstrip('\n'))
+    select_options()
 
+
+def select_options():
+    """Show menu that lets user select scraping option(s)."""
     # Show menu
-    print("Will scrape data from the following organizations:", *org_list)
+    print("Will scrape data from the following organizations:", *ORG_LIST)
     print("""
     1. Get a list of the organizations' repositories (CSV)
     2. Get all contributors of the organizations' repositories (CSV and GEXF).
@@ -74,11 +78,11 @@ def select_options():
     }
     for operation in operations_input:
         if int(operation) == 6:
-            operations_dict[int(operation)](org_list, network_type="full")
+            operations_dict[int(operation)](network_type="full")
         elif int(operation) == 7:
-            operations_dict[int(operation)](org_list, network_type="narrow")
+            operations_dict[int(operation)](network_type="narrow")
         else:
-            operations_dict[int(operation)](org_list)
+            operations_dict[int(operation)]()
 
 
 def load_json(url: str, memberscrape: bool = False):
@@ -131,11 +135,11 @@ def generate_csv(data_type: str, json_list: List, columns_list: List):
     )
 
 
-def get_repos(org_list: List):
+def get_repos():
     """Create list of the organizations' repositories."""
     # TODO: Create helper function to load API pages
     json_repos = []
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nScraping repositories of {org}")
         json_repo = load_json(
             f"https://api.github.com/orgs/{org}/repos?per_page=100"
@@ -160,7 +164,7 @@ def get_repos(org_list: List):
     generate_csv("repo-list", json_repos, columns_list)
 
 
-def get_contributors(org_list: List):
+def get_contributors():
     """Create list of contributors to the organizations' repositories."""
     print("\nCreating list of contributors.")
     json_contributors_all = []
@@ -173,7 +177,7 @@ def get_contributors(org_list: List):
         'html_url',
         'url'
     ]
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nScraping contributors of {org}")
         json_repo = load_json(
             f"https://api.github.com/orgs/{org}/repos?per_page=100"
@@ -214,7 +218,7 @@ def get_contributors(org_list: List):
     )
 
 
-def get_members_repos(org_list: List):
+def get_members_repos():
     """Create list of all the members of an organization and their repositories."""
     print("\nGetting repositories of all members.")
     json_members_repos = []
@@ -228,7 +232,7 @@ def get_members_repos(org_list: List):
         'language',
         'description'
     ]
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nGetting members of {org}")
         json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
@@ -246,7 +250,7 @@ def get_members_repos(org_list: List):
     generate_csv("members-list", json_members_repos, columns_list)
 
 
-def get_members_info(org_list: List):
+def get_members_info():
     """Gather information about the organizations' members."""
     print("\nGetting user information of all members.")
     json_members_info = []
@@ -260,7 +264,7 @@ def get_members_info(org_list: List):
         'blog',
         'location'
     ]
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nGetting members of {org}")
         json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
@@ -277,7 +281,7 @@ def get_members_info(org_list: List):
     generate_csv("members-info", json_members_info, columns_list)
 
 
-def get_starred_repos(org_list: List):
+def get_starred_repos():
     """Create list of all the repositories starred by organizations' members."""
     print("\nGetting repositories starred by members.")
     json_starred_repos_all = []
@@ -289,7 +293,7 @@ def get_starred_repos(org_list: List):
         'language',
         'description'
     ]
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nGetting members of {org}")
         json_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
@@ -306,7 +310,7 @@ def get_starred_repos(org_list: List):
     generate_csv("starred-list", json_starred_repos_all, columns_list)
 
 
-def generate_follower_network(org_list: List, network_type: str = ""):
+def generate_follower_network(network_type: str = ""):
     """Create full or narrow follower networks of organizations' members.
 
     First, get every user following the members of organizations (followers)
@@ -320,7 +324,7 @@ def generate_follower_network(org_list: List, network_type: str = ""):
         print("\nGenerating narrow follower network.")
         # Getting a list of all members if narrow graph is chosen
         members_list = []
-        for org in org_list:
+        for org in ORG_LIST:
             print("\nGetting members of specified organizations to filter network...")
             json_org_members = load_json(
                 f"https://api.github.com/orgs/{org}/members?per_page=100"
@@ -329,7 +333,7 @@ def generate_follower_network(org_list: List, network_type: str = ""):
                 members_list.append(member['login'])
 
     graph = nx.DiGraph()
-    for org in org_list:
+    for org in ORG_LIST:
         print(f"\nGetting members of {org}")
         json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
@@ -382,14 +386,14 @@ def generate_follower_network(org_list: List, network_type: str = ""):
     )
 
 
-def generate_memberships(org_list: List):
+def generate_memberships():
     """Take all the members of the organizations and generate a directed graph.
 
     This shows creates a network with the organizational memberships.
     """
     print("\nGenerating network of memberships.")
     graph = nx.DiGraph()
-    for org in org_list:
+    for org in ORG_LIST:
         json_org_members = load_json(
             f"https://api.github.com/orgs/{org}/members?per_page=100"
         )
@@ -414,4 +418,4 @@ def generate_memberships(org_list: List):
 
 
 if __name__ == "__main__":
-    select_options()
+    setup()
