@@ -4,7 +4,7 @@ import csv
 import json
 import time
 from sys import exit
-from typing import List
+from typing import Dict, List
 
 import networkx as nx
 import requests
@@ -50,8 +50,24 @@ class GithubScraper():
                 # Using rstrip to remove the newline escape sequences
                 self.orgs.append(line.rstrip('\n'))
 
+        # Load members of the listed organizations
+        self.members = self.get_members()
+
         # Start user interface
         self.select_options()
+
+    def get_members(self):
+        """Get list of members of specified orgs."""
+        print("Collecting members of specified organizations...")
+        members: Dict[str, List[str]] = {}
+        for org in self.orgs:
+            json_org_members = self.load_json(
+                f"https://api.github.com/orgs/{org}/members?per_page=100"
+            )
+            members[org] = []
+            for member in json_org_members:
+                members[org].append(member['login'])
+        return members
 
     def select_options(self):
         """Show menu that lets user select scraping option(s)."""
@@ -237,19 +253,16 @@ class GithubScraper():
             'description'
         ]
         for org in self.orgs:
-            print(f"\nGetting members of {org}")
-            json_org_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
-            )
-            for member in json_org_members:
-                print(f"Getting repositories of {member['login']}")
+            print(f"\nScraping {org}...")
+            for member in self.members[org]:
+                print(f"Getting repositories of {member}")
                 json_repos_members = self.load_json(
-                    f"https://api.github.com/users/{member['login']}/repos?per_page=100"
+                    f"https://api.github.com/users/{member}/repos?per_page=100"
                 )
                 for repo in json_repos_members:
                     # Add fields to make CSV file more usable
                     repo['organization'] = org
-                    repo['user'] = member['login']
+                    repo['user'] = member
                     json_members_repos.append(repo)
         self.generate_csv("members-list", json_members_repos, columns_list)
 
@@ -268,14 +281,11 @@ class GithubScraper():
             'location'
         ]
         for org in self.orgs:
-            print(f"\nGetting members of {org}")
-            json_org_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
-            )
-            for member in json_org_members:
-                print(f"Getting user information for {member['login']}")
+            print(f"\nScraping {org}...")
+            for member in self.members[org]:
+                print(f"Getting user information for {member}")
                 json_org_member = self.load_json(
-                    f"https://api.github.com/users/{member['login']}?per_page=100",
+                    f"https://api.github.com/users/{member}?per_page=100",
                     memberscrape=True
                 )
                 # Add field to make CSV file more usable
@@ -296,18 +306,15 @@ class GithubScraper():
             'description'
         ]
         for org in self.orgs:
-            print(f"\nGetting members of {org}")
-            json_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
-            )
-            for member in json_members:
-                print(f"Getting starred repositories of {member['login']}")
+            print(f"\nScraping {org}...")
+            for member in self.members[org]:
+                print(f"Getting starred repositories of {member}")
                 json_starred_repos_member = self.load_json(
-                    f"https://api.github.com/users/{member['login']}/starred?per_page=100"
+                    f"https://api.github.com/users/{member}/starred?per_page=100"
                 )
                 for repo in json_starred_repos_member:
                     repo['organization'] = org
-                    repo['user'] = member['login']
+                    repo['user'] = member
                     json_starred_repos_all.append(repo)
         self.generate_csv("starred-list", json_starred_repos_all, columns_list)
 
@@ -323,57 +330,46 @@ class GithubScraper():
             print("\nGenerating full follower network.")
         else:
             print("\nGenerating narrow follower network.")
-            # Getting a list of all members if narrow graph is chosen
-            members_list = []
-            for org in self.orgs:
-                print("\nGetting members of specified organizations to filter network...")
-                json_org_members = self.load_json(
-                    f"https://api.github.com/orgs/{org}/members?per_page=100"
-                )
-                for member in json_org_members:
-                    members_list.append(member['login'])
 
         graph = nx.DiGraph()
         for org in self.orgs:
-            print(f"\nGetting members of {org}")
-            json_org_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
-            )
-            for member in json_org_members:
+            print(f"\nScraping {org}...")
+            for member in self.members[org]:
                 json_followers = self.load_json(
-                    f"https://api.github.com/users/{member['login']}/followers?per_page=100"
+                    f"https://api.github.com/users/{member}/followers?per_page=100"
                 )
                 json_followings = self.load_json(
-                    f"https://api.github.com/users/{member['login']}/following?per_page=100"
+                    f"https://api.github.com/users/{member}/following?per_page=100"
                 )
-                print(f"Getting follower network of {member['login']}")
-                graph.add_node(member['login'], organization=org)
+                print(f"Getting follower network of {member}")
+                graph.add_node(member, organization=org)
+
                 if network_type == "full":
                     for follower in json_followers:
                         graph.add_edge(
                             follower['login'],
-                            member['login'],
+                            member,
                             organization=org
                         )
                     for following in json_followings:
                         graph.add_edge(
-                            member['login'],
+                            member,
                             following['login'],
                             organization=org
                         )
                 else:
                     # Generate narrow network excluding non-members
                     for follower in json_followers:
-                        if follower['login'] in members_list:
+                        if follower['login'] in self.members[org]:
                             graph.add_edge(
                                 follower['login'],
-                                member['login'],
+                                member,
                                 organization=org
                             )
                     for following in json_followings:
-                        if following['login'] in members_list:
+                        if following['login'] in self.members[org]:
                             graph.add_edge(
-                                member['login'],
+                                member,
                                 following['login'],
                                 organization=org
                             )
@@ -394,18 +390,15 @@ class GithubScraper():
         print("\nGenerating network of memberships.")
         graph = nx.DiGraph()
         for org in self.orgs:
-            json_org_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
-            )
-            for member in json_org_members:
-                print(f"Getting membership of {member['login']}")
-                graph.add_node(member['login'], node_type='user')
+            for member in self.members[org]:
+                print(f"Getting membership of {member}")
+                graph.add_node(member, node_type='user')
                 json_org_memberships = self.load_json(
-                    f"https://api.github.com/users/{member['login']}/orgs?per_page=100"
+                    f"https://api.github.com/users/{member}/orgs?per_page=100"
                 )
                 for organization in json_org_memberships:
                     graph.add_edge(
-                        member['login'],
+                        member,
                         organization['login'],
                         node_type='organization'
                     )
