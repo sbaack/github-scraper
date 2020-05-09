@@ -15,20 +15,20 @@ class GithubScraper():
 
     Use Github API key and user name to make requests to Github API.
     Create spreadsheets named after data type and date.
+
+    Attributes:
+        api_token (str): Github API token necessary for authentication
+        members (Dict[str, List[str]]): Dict with orgs as keys and list of members as values
+        orgs (List[str]): List of organizational Github accounts to scrape
+        timestamp (str): Current date and hour, used to create unique file names
+        user (str): Name of GitHub user that scrapes the data
     """
 
     def __init__(self) -> None:
         """Read config file and org list to instantiate.
 
-        Attributes
-            user : str
-                Name of GitHub user that scrapes the data
-            api_token : str
-                Github API token necessary for authentication
-            orgs : List[str]
-                List of organizational Github accounts to scrape
-            members : Dict[str, List[str]]
-                Dict with orgs as keys and list of members as values
+        Raises:
+            KeyError: If config file is empty
         """
         # Read user name and API token from config file
         try:
@@ -65,8 +65,7 @@ class GithubScraper():
         """Get list of members of specified orgs.
 
         Returns:
-            Dict[str, List[date]]:
-                Keys are orgs, values list of members
+            Dict[str, List[str]]: Keys are orgs, values list of members
         """
         print("Collecting members of specified organizations...\n")
         members: Dict[str, List[str]] = {}
@@ -120,11 +119,10 @@ class GithubScraper():
 
         Args:
             url (str): Github API URL to load as JSON
-            memberscrape (bool): Scraping members requires different URL
+            memberscrape (bool, optional): Scraping members requires different URL
 
         Returns:
-            JSON object:
-                Github URL loaded as JSON
+            JSON object: Github URL loaded as JSON
         """
         # TODO: Add error handling if request fails (e.g. if repo was not found)
         if memberscrape:
@@ -152,7 +150,14 @@ class GithubScraper():
         return json_list
 
     def generate_csv(self, file_name: str, json_list: List, columns_list: List):
-        """Write CSV file."""
+        """Write CSV file.
+
+        Args:
+            file_name (str): Name of the CSV file
+            json_list (List): JSON data to turn into CSV
+            columns_list (List): List of columns that represent relevant fields
+                                 in the JSON data
+        """
         with open(
                 f"data/{file_name}",
                 'a+'
