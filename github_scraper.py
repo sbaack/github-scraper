@@ -43,7 +43,7 @@ class GithubScraper():
             exit(1)
 
         # Read list of organizations from file
-        print("\nReading list of organizations from file.\n")
+        print("\nReading list of organizations from file...")
         self.orgs = []
         with open('organizations.txt', 'r') as file:
             for line in file:
@@ -58,7 +58,7 @@ class GithubScraper():
 
     def get_members(self):
         """Get list of members of specified orgs."""
-        print("Collecting members of specified organizations...")
+        print("Collecting members of specified organizations...\n")
         members: Dict[str, List[str]] = {}
         for org in self.orgs:
             json_org_members = self.load_json(
@@ -89,7 +89,7 @@ class GithubScraper():
         # Read input and start specified operations
         operations = operations.lower()
         if operations == 'all':
-            operations = "1, 2, 3, 4, 5, 6, 7, 8"
+            operations = "1, 2, 3, 4, 5, 6, 7"
         operations_input = operations.split(', ')
         operations_dict = {
             1: self.get_repos,
@@ -153,10 +153,10 @@ class GithubScraper():
 
     def get_repos(self):
         """Create list of the organizations' repositories."""
-        # TODO: Create helper function to load API pages
+        print("\nScraping repositories")
         json_repos = []
         for org in self.orgs:
-            print(f"\nScraping repositories of {org}")
+            print(f"Scraping repositories of {org}")
             json_repo = self.load_json(
                 f"https://api.github.com/orgs/{org}/repos?per_page=100"
             )
@@ -181,7 +181,7 @@ class GithubScraper():
 
     def get_contributors(self):
         """Create list of contributors to the organizations' repositories."""
-        print("\nCreating list of contributors.")
+        print("\nScraping contributors")
         json_contributors_all = []
         graph = nx.DiGraph()
         columns_list = [
@@ -320,6 +320,7 @@ class GithubScraper():
         directed graph with networkx. Only includes members of specified organizations
         if network_type == narrow.
         """
+        print('\nGenerating follower networks')
         # Create graph dict and add self.members as nodes
         graph: Dict[str, nx.DiGraph] = {}
         graph["full"] = nx.DiGraph()
@@ -385,7 +386,7 @@ class GithubScraper():
 
         This shows creates a network with the organizational memberships.
         """
-        print("\nGenerating network of memberships.")
+        print("\nGenerating network of memberships.\n")
         graph = nx.DiGraph()
         for org in self.orgs:
             for member in self.members[org]:
