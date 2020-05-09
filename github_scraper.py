@@ -101,13 +101,13 @@ class GithubScraper():
             operations = "1, 2, 3, 4, 5, 6, 7"
         operations_input = operations.split(', ')
         operations_dict = {
-            1: self.get_repos,
-            2: self.get_contributors,
+            1: self.get_org_repos,
+            2: self.get_repo_contributors,
             3: self.get_members_repos,
             4: self.get_members_info,
             5: self.get_starred_repos,
             6: self.generate_follower_network,
-            7: self.generate_memberships
+            7: self.generate_memberships_network
         }
         for operation in operations_input:
             operations_dict[int(operation)]()
@@ -174,7 +174,7 @@ class GithubScraper():
             f"\nCSV file saved as data/{file_name}"
         )
 
-    def get_repos(self):
+    def get_org_repos(self):
         """Create list of the organizations' repositories."""
         print("\nScraping repositories")
         json_repos = []
@@ -203,7 +203,7 @@ class GithubScraper():
         file_name = f"org_repositories_{self.timestamp}.csv"
         self.generate_csv(file_name, json_repos, columns_list)
 
-    def get_contributors(self):
+    def get_repo_contributors(self):
         """Create list of contributors to the organizations' repositories."""
         print("\nScraping contributors")
         json_contributors_all = []
@@ -407,7 +407,7 @@ class GithubScraper():
             f"- narrow-follower-network_{self.timestamp}.gexf"
         )
 
-    def generate_memberships(self):
+    def generate_memberships_network(self):
         """Take all the members of the organizations and generate a directed graph.
 
         This shows creates a network with the organizational memberships.
