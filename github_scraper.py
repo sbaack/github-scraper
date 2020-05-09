@@ -53,6 +53,9 @@ class GithubScraper():
         # Load members of the listed organizations
         self.members = self.get_members()
 
+        # Timestamp used to name files
+        self.timestamp = time.strftime('%Y-%m-%d_%H:%M:%S')
+
         # Start user interface
         self.select_options()
 
@@ -133,10 +136,10 @@ class GithubScraper():
                 page += 1
         return json_list
 
-    def generate_csv(self, data_type: str, json_list: List, columns_list: List):
+    def generate_csv(self, file_name: str, json_list: List, columns_list: List):
         """Write CSV file."""
         with open(
-                f"data/{data_type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv",
+                f"data/{file_name}",
                 'a+'
         ) as file:
             csv_file = csv.DictWriter(
@@ -148,7 +151,7 @@ class GithubScraper():
             for item in json_list:
                 csv_file.writerow(item)
         print(
-            f"\nCSV file saved as data/{data_type}_{time.strftime('%Y-%m-%d_%H:%M:%S')}.csv"
+            f"\nCSV file saved as data/{file_name}"
         )
 
     def get_repos(self):
@@ -177,7 +180,8 @@ class GithubScraper():
             'fork',
             'description'
         ]
-        self.generate_csv("repo-list", json_repos, columns_list)
+        file_name = f"org_repositories_{self.timestamp}.csv"
+        self.generate_csv(file_name, json_repos, columns_list)
 
     def get_contributors(self):
         """Create list of contributors to the organizations' repositories."""
@@ -222,14 +226,15 @@ class GithubScraper():
                     print(
                         f"Repository '{repo['name']}' appears to be empty."
                     )
-        self.generate_csv("contributor-list", json_contributors_all, columns_list)
+        file_name = f"contributor_list_{self.timestamp}.csv"
+        self.generate_csv(file_name, json_contributors_all, columns_list)
         # TODO: Use variable for name of the file
         nx.write_gexf(
             graph,
-            f"data/contributor-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            f"data/contributor_network_{self.timestamp}.gexf"
         )
         print(
-            f"\nSaved graph file: data/contributor-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            f"\nSaved graph file: data/contributor_network_{self.timestamp}.gexf"
         )
 
     def get_members_repos(self):
@@ -258,7 +263,8 @@ class GithubScraper():
                     repo['organization'] = org
                     repo['user'] = member
                     json_members_repos.append(repo)
-        self.generate_csv("members-list", json_members_repos, columns_list)
+        file_name = f"members_repositories_{self.timestamp}.csv"
+        self.generate_csv(file_name, json_members_repos, columns_list)
 
     def get_members_info(self):
         """Gather information about the organizations' members."""
@@ -285,7 +291,8 @@ class GithubScraper():
                 # Add field to make CSV file more usable
                 json_org_member["organization"] = org
                 json_members_info.append(json_org_member)
-        self.generate_csv("members-info", json_members_info, columns_list)
+        file_name = f"members_info_{self.timestamp}.csv"
+        self.generate_csv(file_name, json_members_info, columns_list)
 
     def get_starred_repos(self):
         """Create list of all the repositories starred by organizations' members."""
@@ -310,7 +317,8 @@ class GithubScraper():
                     repo['organization'] = org
                     repo['user'] = member
                     json_starred_repos_all.append(repo)
-        self.generate_csv("starred-list", json_starred_repos_all, columns_list)
+        file_name = f"starred_repositories_{self.timestamp}.csv"
+        self.generate_csv(file_name, json_starred_repos_all, columns_list)
 
     def generate_follower_network(self):
         """Create full or narrow follower networks of organizations' members.
@@ -372,13 +380,13 @@ class GithubScraper():
         for graph_type in graph:
             nx.write_gexf(
                 graph[graph_type],
-                f"data/{graph_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+                f"data/{graph_type}-follower-network_{self.timestamp}.gexf"
             )
 
         print(
             "\nSaved graph files in data folder:\n"
-            f"- full-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf\n"
-            f"- narrow-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            f"- full-follower-network_{self.timestamp}.gexf\n"
+            f"- narrow-follower-network_{self.timestamp}.gexf"
         )
 
     def generate_memberships(self):
@@ -403,9 +411,9 @@ class GithubScraper():
                     )
         nx.write_gexf(
             graph,
-            f"data/membership-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf")
+            f"data/membership_network_{self.timestamp}.gexf")
         print(
-            f"\nSaved graph file: data/membership-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            f"\nSaved graph file: data/membership_network_{self.timestamp}.gexf"
         )
 
 
