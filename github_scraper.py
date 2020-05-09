@@ -135,22 +135,20 @@ class GithubScraper():
         """
         # TODO: Add error handling if request fails (e.g. if repo was not found)
         if memberscrape:
-            request = requests.get(
+            json_data = requests.get(
                 f"{url}?per_page=100",
                 auth=(self.user, self.api_token)
-            )
-            json_data = json.loads(request.text)
+            ).json()
             return json_data
 
         page = 1
         json_list = []
         page_not_empty = True
         while page_not_empty:
-            request = requests.get(
+            json_data = requests.get(
                 f"{url}?per_page=100&page={str(page)}",
                 auth=(self.user, self.api_token)
-            )
-            json_data = json.loads(request.text)
+            ).json()
             if json_data == []:
                 page_not_empty = False
             else:
