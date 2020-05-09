@@ -44,7 +44,8 @@ class GithubScraper():
                 print(f"User name: {self.user}")
                 print(f"Api token: {self.api_token}")
         except (FileNotFoundError, KeyError):
-            print("Failed to read user name and password in config.jon file.")
+            print("\nFailed to read user name and password from config.jon file.")
+            print("Please enter your Github user name and API token.")
             exit(1)
 
         # Read list of organizations from file
@@ -54,6 +55,11 @@ class GithubScraper():
             for line in file:
                 # Using rstrip to remove the newline escape sequences
                 self.orgs.append(line.rstrip('\n'))
+        if not self.orgs:
+            print("\nNo organizations to scrape found in organizations.txt.")
+            print("Please add the names of the organizations you want to scrape.")
+            print("Add one name per line.")
+            exit(1)
 
         # Load members of the listed organizations
         self.members = self.get_members()
