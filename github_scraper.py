@@ -25,7 +25,10 @@ class GithubScraper():
     """
 
     def __init__(self) -> None:
-        """Read config file and org list to instantiate.
+        """Instantiate object.
+
+        Read config file and org list, get list of organizations' members and
+        get current time.
 
         Raises:
             KeyError: If config file is empty
