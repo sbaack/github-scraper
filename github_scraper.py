@@ -80,7 +80,7 @@ class GithubScraper():
         members: Dict[str, List[str]] = {}
         for org in self.orgs:
             json_org_members = self.load_json(
-                f"https://api.github.com/orgs/{org}/members?per_page=100"
+                f"https://api.github.com/orgs/{org}/members"
             )
             members[org] = []
             for member in json_org_members:
@@ -136,7 +136,7 @@ class GithubScraper():
         # TODO: Add error handling if request fails (e.g. if repo was not found)
         if memberscrape:
             request = requests.get(
-                url,
+                f"{url}?per_page=100",
                 auth=(self.user, self.api_token)
             )
             json_data = json.loads(request.text)
@@ -147,7 +147,7 @@ class GithubScraper():
         page_not_empty = True
         while page_not_empty:
             request = requests.get(
-                f"{url}&page={str(page)}",
+                f"{url}?per_page=100&page={str(page)}",
                 auth=(self.user, self.api_token)
             )
             json_data = json.loads(request.text)
@@ -190,7 +190,7 @@ class GithubScraper():
         for org in self.orgs:
             print(f"Scraping repositories of {org}")
             json_repo = self.load_json(
-                f"https://api.github.com/orgs/{org}/repos?per_page=100"
+                f"https://api.github.com/orgs/{org}/repos"
             )
             for repo in json_repo:
                 # Add field for org to make CSV file more useful
@@ -228,7 +228,7 @@ class GithubScraper():
         for org in self.orgs:
             print(f"\nScraping contributors of {org}")
             json_repo = self.load_json(
-                f"https://api.github.com/orgs/{org}/repos?per_page=100"
+                f"https://api.github.com/orgs/{org}/repos"
             )
             for repo in json_repo:
                 try:
@@ -237,7 +237,7 @@ class GithubScraper():
                     graph.add_node(repo['name'], organization=org)
                     # Then get a list of contributors
                     json_contributors_repo = self.load_json(
-                        f"https://api.github.com/repos/{org}/{repo['name']}/contributors?per_page=100"
+                        f"https://api.github.com/repos/{org}/{repo['name']}/contributors"
                     )
                     for contributor in json_contributors_repo:
                         # Add each contributor as an edge to the graph
@@ -285,7 +285,7 @@ class GithubScraper():
             for member in self.members[org]:
                 print(f"Getting repositories of {member}")
                 json_repos_members = self.load_json(
-                    f"https://api.github.com/users/{member}/repos?per_page=100"
+                    f"https://api.github.com/users/{member}/repos"
                 )
                 for repo in json_repos_members:
                     # Add fields to make CSV file more usable
@@ -314,7 +314,7 @@ class GithubScraper():
             for member in self.members[org]:
                 print(f"Getting user information for {member}")
                 json_org_member = self.load_json(
-                    f"https://api.github.com/users/{member}?per_page=100",
+                    f"https://api.github.com/users/{member}",
                     memberscrape=True
                 )
                 # Add field to make CSV file more usable
@@ -340,7 +340,7 @@ class GithubScraper():
             for member in self.members[org]:
                 print(f"Getting starred repositories of {member}")
                 json_starred_repos_member = self.load_json(
-                    f"https://api.github.com/users/{member}/starred?per_page=100"
+                    f"https://api.github.com/users/{member}/starred"
                 )
                 for repo in json_starred_repos_member:
                     repo['organization'] = org
@@ -372,10 +372,10 @@ class GithubScraper():
             print(f"\nScraping {org}...")
             for member in self.members[org]:
                 json_followers = self.load_json(
-                    f"https://api.github.com/users/{member}/followers?per_page=100"
+                    f"https://api.github.com/users/{member}/followers"
                 )
                 json_followings = self.load_json(
-                    f"https://api.github.com/users/{member}/following?per_page=100"
+                    f"https://api.github.com/users/{member}/following"
                 )
                 print(f"Getting follower network of {member}")
 
@@ -428,7 +428,7 @@ class GithubScraper():
                 print(f"Getting membership of {member}")
                 graph.add_node(member, node_type='user')
                 json_org_memberships = self.load_json(
-                    f"https://api.github.com/users/{member}/orgs?per_page=100"
+                    f"https://api.github.com/users/{member}/orgs"
                 )
                 for organization in json_org_memberships:
                     graph.add_edge(
