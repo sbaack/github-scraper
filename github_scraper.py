@@ -73,17 +73,17 @@ class GithubScraper():
         """Show menu that lets user select scraping option(s)."""
         print("Will scrape data from the following organizations:", *self.orgs)
         print("""
-        1. Get a list of the organizations' repositories (CSV)
-        2. Get all contributors of the organizations' repositories (CSV and GEXF).
-        3. Get a list of the repositories of all the members of the organizations (CSV).
-        4. Get information for each member of the organizations (CSV).
-        5. Generate spreadsheet for starred repositories (CSV).
-        6. Generate a full follower network (GEXF).
-        7. Generate a narrow follower network (only includes members of the organizations) (GEXF).
-        8. Generate a graph illustrating the membership structures (GEXF).
+        1. Scrape the organizations' repositories (CSV).
+        2. Scrape contributors of the organizations' repositories (CSV and GEXF).
+        3. Scrape all repositories owned by the members of the organizations (CSV).
+        4. Scrape information about each member of the organizations (CSV).
+        5. Scrape all repositories starred by the members of the organizations (CSV).
+        6. Generate a follower network. Creates full and narrow network graph, the latter only
+           shows how scraped organizations are networked among each other (two GEXF files).
+        7. Scrape all organizational memberships to graph membership structures (GEXF).
         """)
         operations = input(
-            "Choose options. Select multiple with comma separated list or 'All'.\n> "
+            "Choose option(s). Select multiple with comma separated list or 'All'.\n> "
         )
 
         # Read input and start specified operations
@@ -98,16 +98,10 @@ class GithubScraper():
             4: self.get_members_info,
             5: self.get_starred_repos,
             6: self.generate_follower_network,
-            7: self.generate_follower_network,
-            8: self.generate_memberships
+            7: self.generate_memberships
         }
         for operation in operations_input:
-            if int(operation) == 6:
-                operations_dict[int(operation)](network_type="full")
-            elif int(operation) == 7:
-                operations_dict[int(operation)](network_type="narrow")
-            else:
-                operations_dict[int(operation)]()
+            operations_dict[int(operation)]()
 
     def load_json(self, url: str, memberscrape: bool = False):
         """Load json file using requests.
@@ -318,7 +312,7 @@ class GithubScraper():
                     json_starred_repos_all.append(repo)
         self.generate_csv("starred-list", json_starred_repos_all, columns_list)
 
-    def generate_follower_network(self, network_type: str = ""):
+    def generate_follower_network(self):
         """Create full or narrow follower networks of organizations' members.
 
         First, get every user following the members of organizations (followers)
@@ -326,12 +320,16 @@ class GithubScraper():
         directed graph with networkx. Only includes members of specified organizations
         if network_type == narrow.
         """
-        if network_type == "full":
-            print("\nGenerating full follower network.")
-        else:
-            print("\nGenerating narrow follower network.")
+        # Create graph dict and add self.members as nodes
+        graph: Dict[str, nx.DiGraph] = {}
+        graph["full"] = nx.DiGraph()
+        graph["narrow"] = nx.DiGraph()
+        for org in self.orgs:
+            for member in self.members[org]:
+                for graph_type in graph:
+                    graph[graph_type].add_node(member, organization=org)
 
-        graph = nx.DiGraph()
+        # Get followers and following for each member and build graph
         for org in self.orgs:
             print(f"\nScraping {org}...")
             for member in self.members[org]:
@@ -342,44 +340,44 @@ class GithubScraper():
                     f"https://api.github.com/users/{member}/following?per_page=100"
                 )
                 print(f"Getting follower network of {member}")
-                graph.add_node(member, organization=org)
 
-                if network_type == "full":
-                    for follower in json_followers:
-                        graph.add_edge(
+                # First generate full follower network
+                for follower in json_followers:
+                    graph["full"].add_edge(
+                        follower['login'],
+                        member,
+                        organization=org
+                    )
+                    # Then generate narrow follower network
+                    if follower['login'] in self.members[org]:
+                        graph["narrow"].add_edge(
                             follower['login'],
                             member,
                             organization=org
                         )
-                    for following in json_followings:
-                        graph.add_edge(
+                for following in json_followings:
+                    graph["full"].add_edge(
+                        member,
+                        following['login'],
+                        organization=org
+                    )
+                    if following['login'] in self.members[org]:
+                        graph["narrow"].add_edge(
                             member,
                             following['login'],
                             organization=org
                         )
-                else:
-                    # Generate narrow network excluding non-members
-                    for follower in json_followers:
-                        if follower['login'] in self.members[org]:
-                            graph.add_edge(
-                                follower['login'],
-                                member,
-                                organization=org
-                            )
-                    for following in json_followings:
-                        if following['login'] in self.members[org]:
-                            graph.add_edge(
-                                member,
-                                following['login'],
-                                organization=org
-                            )
-        nx.write_gexf(
-            graph,
-            f"data/{network_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
-        )
+
+        for graph_type in graph:
+            nx.write_gexf(
+                graph[graph_type],
+                f"data/{graph_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            )
+
         print(
-            "\nSaved graph file: data/"
-            f"{network_type}-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
+            "\nSaved graph files in data folder:\n"
+            f"- full-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf\n"
+            f"- narrow-follower-network_{time.strftime('%Y-%m-%d_%H:%M:%S')}.gexf"
         )
 
     def generate_memberships(self):
