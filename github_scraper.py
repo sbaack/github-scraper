@@ -13,20 +13,22 @@ import requests
 class GithubScraper():
     """Scrape information about organizational Github accounts.
 
-    Uses Github API key and user name to make requests to Github API.
-    Creates spreadsheets named after data type and date.
+    Use Github API key and user name to make requests to Github API.
+    Create spreadsheets named after data type and date.
     """
 
     def __init__(self) -> None:
-        """Read config data and org list to instantiate.
+        """Read config file and org list to instantiate.
 
         Attributes
             user : str
                 Name of GitHub user that scrapes the data
             api_token : str
                 Github API token necessary for authentication
-            orgs : List
+            orgs : List[str]
                 List of organizational Github accounts to scrape
+            members : Dict[str, List[str]]
+                Dict with orgs as keys and list of members as values
         """
         # Read user name and API token from config file
         try:
@@ -59,8 +61,13 @@ class GithubScraper():
         # Start user interface
         self.select_options()
 
-    def get_members(self):
-        """Get list of members of specified orgs."""
+    def get_members(self) -> Dict[str, List[str]]:
+        """Get list of members of specified orgs.
+
+        Returns:
+            Dict[str, List[date]]:
+                Keys are orgs, values list of members
+        """
         print("Collecting members of specified organizations...\n")
         members: Dict[str, List[str]] = {}
         for org in self.orgs:
@@ -110,6 +117,14 @@ class GithubScraper():
         """Load json file using requests.
 
         Iterates over the pages of the API and returns a list of dicts.
+
+        Args:
+            url (str): Github API URL to load as JSON
+            memberscrape (bool): Scraping members requires different URL
+
+        Returns:
+            JSON object:
+                Github URL loaded as JSON
         """
         # TODO: Add error handling if request fails (e.g. if repo was not found)
         if memberscrape:
@@ -323,10 +338,10 @@ class GithubScraper():
     def generate_follower_network(self):
         """Create full or narrow follower networks of organizations' members.
 
-        First, get every user following the members of organizations (followers)
-        and the users they are following themselves (following). Then generate a
-        directed graph with networkx. Only includes members of specified organizations
-        if network_type == narrow.
+        Get every user following the members of organizations (followers)
+        and the users they are following themselves (following). Then generate two
+        directed graphs with networkx. Only includes members of specified organizations
+        if in narrow follower network.
         """
         print('\nGenerating follower networks')
         # Create graph dict and add self.members as nodes
@@ -376,13 +391,11 @@ class GithubScraper():
                             following['login'],
                             organization=org
                         )
-
         for graph_type in graph:
             nx.write_gexf(
                 graph[graph_type],
                 f"data/{graph_type}-follower-network_{self.timestamp}.gexf"
             )
-
         print(
             "\nSaved graph files in data folder:\n"
             f"- full-follower-network_{self.timestamp}.gexf\n"
