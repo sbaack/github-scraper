@@ -125,29 +125,19 @@ class GithubScraper():
         for operation in operations_input:
             operations_dict[int(operation)]()
 
-    def load_json(self, url: str, memberscrape: bool = False):
+    def load_json(self, url: str):
         """Load json file using requests.
 
         Iterates over the pages of the API and returns a list of dicts.
 
         Args:
             url (str): Github API URL to load as JSON
-            memberscrape (bool, optional): Scraping members requires different URL
 
         Returns:
             JSON object: Github URL loaded as JSON
         """
-        # TODO: Add error handling if request fails (e.g. if repo was not found)
-        if memberscrape:
-            json_data = requests.get(
-                f"{url}?per_page=100",
-                auth=(self.user, self.api_token)
-            ).json()
-            return json_data
-
         page = 1
         json_list = []
-        # Loop through API pages and stop when page is empty
         while True:
             json_data = requests.get(
                 f"{url}?per_page=100&page={str(page)}",
@@ -315,10 +305,12 @@ class GithubScraper():
             print(f"\nScraping {org}...")
             for member in self.members[org]:
                 print(f"Getting user information for {member}")
-                json_org_member = self.load_json(
-                    f"https://api.github.com/users/{member}",
-                    memberscrape=True
-                )
+                # Don't use self.load_json() because pagination method
+                # does not work on API calls for member infos
+                json_org_member = requests.get(
+                    f"https://api.github.com/users/{member}?per_page=100",
+                    auth=(self.user, self.api_token)
+                ).json()
                 # Add field to make CSV file more usable
                 json_org_member["organization"] = org
                 json_members_info.append(json_org_member)
