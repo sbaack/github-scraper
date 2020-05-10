@@ -188,7 +188,7 @@ class GithubScraper():
                 # Add field for org to make CSV file more useful
                 repo['organization'] = org
                 json_repos.append(repo)
-        # Create a list with the items I'm interested in, then call generate_csv
+        # Create list of items that should appear as columns in the CSV
         columns_list = [
             'organization',
             'name',
@@ -249,7 +249,6 @@ class GithubScraper():
                     )
         file_name = f"contributor_list_{self.timestamp}.csv"
         self.generate_csv(file_name, json_contributors_all, columns_list)
-        # TODO: Use variable for name of the file
         nx.write_gexf(
             graph,
             f"data/contributor_network_{self.timestamp}.gexf"
@@ -348,7 +347,7 @@ class GithubScraper():
 
         Get every user following the members of organizations (followers)
         and the users they are following themselves (following). Then generate two
-        directed graphs with networkx. Only includes members of specified organizations
+        directed graphs with NetworkX. Only includes members of specified organizations
         if in narrow follower network.
         """
         print('\nGenerating follower networks')
