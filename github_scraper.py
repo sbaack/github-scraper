@@ -145,9 +145,8 @@ class GithubScraper():
             ).json()
             if json_data == []:
                 break
-            else:
-                json_list.extend(json_data)
-                page += 1
+            json_list.extend(json_data)
+            page += 1
         return json_list
 
     def generate_csv(self, file_name: str, json_list: List, columns_list: List):
