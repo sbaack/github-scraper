@@ -19,12 +19,14 @@ I originally wrote this scraper in 2015 for my dissertation about civic tech and
 1. Clone this repository: `clone https://github.com/sbaack/github-scraper`
 2. Install necessary dependencies (preferably in a [virtual environment](https://docs.python.org/3/tutorial/venv.html)): `pip install -r requirements.txt`. A `requirements.in` file for [pip-tools](https://github.com/jazzband/pip-tools) is also provided.
 3. Open `config.json` and add your GitHub user name and your [personal access token](https://github.com/settings/tokens) to access the GitHub API.
-4. Open `organizations.txt` and add the user account names of the organizations you want to scrape -- one organization per line. For example, if you want to scrape [mySociety](https://github.com/mysociety), [Open Knowledge](https://github.com/okfn), and [Ushahidi](https://github.com/ushahidi), your list will look like this:
+4. Open `organizations.csv` and add the user account names of the organizations you want to scrape in the column *github_org_name*. For example, if you want to scrape [mySociety](https://github.com/mysociety), [Open Knowledge](https://github.com/okfn), and [Ushahidi](https://github.com/ushahidi), your file will look like this:
 
-```
-mysociety
-okfn
-ushahidi
-```
+| github_org_name |
+|:----------------|
+| mysociety       |
+| okfn            |
+| ushahidi        |
+
+Note that you can you add as many columns with additional information as you like, this scraper will ignore them.
 
 5. Start the scraper with `python github_scaper.py` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). Alternatively, just enter 'all' to run everything. The results will be stored in the `data` subfolder.

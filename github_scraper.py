@@ -51,10 +51,10 @@ class GithubScraper():
         # Read list of organizations from file
         print("\nReading list of organizations from file...")
         self.orgs = []
-        with open('organizations.txt', 'r') as file:
-            for line in file:
-                # Using rstrip to remove the newline escape sequences
-                self.orgs.append(line.rstrip('\n'))
+        with open('organizations.csv', 'r', encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                self.orgs.append(row['github_org_name'])
         if not self.orgs:
             print("\nNo organizations to scrape found in organizations.txt.")
             print("Please add the names of the organizations you want to scrape.")
