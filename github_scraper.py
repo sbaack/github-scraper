@@ -147,14 +147,14 @@ class GithubScraper():
 
         page = 1
         json_list = []
-        page_not_empty = True
-        while page_not_empty:
+        # Loop through API pages and stop when page is empty
+        while True:
             json_data = requests.get(
                 f"{url}?per_page=100&page={str(page)}",
                 auth=(self.user, self.api_token)
             ).json()
             if json_data == []:
-                page_not_empty = False
+                break
             else:
                 json_list.extend(json_data)
                 page += 1
