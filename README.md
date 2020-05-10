@@ -1,6 +1,6 @@
 # GitHub scraper
 
-This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list or organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](http://gexf.net/format/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
+This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list or organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](https://gephi.org/gexf/format/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
 
 The scraper offers the following options:
 
