@@ -61,8 +61,9 @@ class GithubScraper():
             print("Add one name per line.")
             exit(1)
 
-        # Load members of the listed organizations
-        self.members = self.get_members()
+        # Members of listed organizations. Instantiated as empty dict and only loaded
+        # if user selects operation that needs this list. Saves API calls.
+        self.members: Dict[str, List[str]] = {}
 
         # Timestamp used to name files
         self.timestamp = time.strftime('%Y-%m-%d_%H:%M:%S')
@@ -76,7 +77,7 @@ class GithubScraper():
         Returns:
             Dict[str, List[str]]: Keys are orgs, values list of members
         """
-        print("Collecting members of specified organizations...\n")
+        print("\nCollecting members of specified organizations...")
         members: Dict[str, List[str]] = {}
         for org in self.orgs:
             json_org_members = self.load_json(
@@ -118,6 +119,9 @@ class GithubScraper():
             6: self.generate_follower_network,
             7: self.generate_memberships_network
         }
+        # Check if member scrape is required
+        if any(int(item) for item in operations_input if int(item) in [3, 4, 5, 6, 7]):
+            self.members = self.get_members()
         for operation in operations_input:
             operations_dict[int(operation)]()
 
