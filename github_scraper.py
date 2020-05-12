@@ -106,10 +106,10 @@ class GithubScraper():
         )
 
         # Read input and start specified operations
-        operations = operations.lower()
+        operations = operations.lower().strip()
         if operations == 'all':
-            operations = "1, 2, 3, 4, 5, 6, 7"
-        operations_input = operations.split(', ')
+            operations = "1,2,3,4,5,6,7"
+        operations_input = operations.split(',')
         operations_dict = {
             1: self.get_org_repos,
             2: self.get_repo_contributors,
