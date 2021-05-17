@@ -29,4 +29,4 @@ I originally wrote this scraper in 2015 for my dissertation about civic tech and
 
 Note that you can you add as many columns with additional information as you like, this scraper will ignore them.
 
-5. Start the scraper with `python github_scaper.py` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). Alternatively, just enter 'all' to run everything. The results will be stored in the `data` subfolder.
+5. Start the scraper with `python -m github_scaper` and choose an option. You can perform several scrapes in one run by entering several numbers separated by commas (, ). Alternatively, just enter 'all' to run everything. The results will be stored in the `data` subfolder.
