@@ -57,9 +57,10 @@ class GithubScraper():
             for row in reader:
                 self.orgs.append(row['github_org_name'])
         if not self.orgs:
-            print("\nNo organizations to scrape found in organizations.txt.")
-            print("Please add the names of the organizations you want to scrape.")
-            print("Add one name per line.")
+            print("\nNo organizations to scrape found in organizations.csv. "
+                  "Please add the names of the organizations you want to scrape "
+                  "in the column 'github_org_name' (one name per row)."
+                  )
             exit(1)
 
         # Members of listed organizations. Instantiated as empty dict and only loaded
