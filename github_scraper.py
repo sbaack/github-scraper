@@ -1,5 +1,6 @@
 """Scrape GitHub data for organizational accounts."""
 
+import argparse
 import csv
 import json
 import os
@@ -71,9 +72,6 @@ class GithubScraper():
         self.timestamp = time.strftime('%Y-%m-%d_%H-%M-%S')
         os.makedirs(f"./data/{self.timestamp}/")
 
-        # Start user interface
-        self.select_options()
-
     def get_members(self) -> Dict[str, List[str]]:
         """Get list of members of specified orgs.
 
@@ -90,43 +88,6 @@ class GithubScraper():
             for member in json_org_members:
                 members[org].append(member['login'])
         return members
-
-    def select_options(self):
-        """Show menu that lets user select scraping option(s)."""
-        print("Will scrape data from the following organizations:", *self.orgs)
-        print("""
-        1. Scrape the organizations' repositories (CSV).
-        2. Scrape contributors of the organizations' repositories (CSV and GEXF).
-        3. Scrape all repositories owned by the members of the organizations (CSV).
-        4. Scrape information about each member of the organizations (CSV).
-        5. Scrape all repositories starred by the members of the organizations (CSV).
-        6. Generate a follower network. Creates full and narrow network graph, the latter only
-           shows how scraped organizations are networked among each other (two GEXF files).
-        7. Scrape all organizational memberships to graph membership structures (GEXF).
-        """)
-        operations = input(
-            "Choose option(s). Select multiple with comma separated list or 'All'.\n> "
-        )
-
-        # Read input and start specified operations
-        operations = operations.lower().strip()
-        if operations == 'all':
-            operations = "1,2,3,4,5,6,7"
-        operations_input = operations.split(',')
-        operations_dict = {
-            1: self.get_org_repos,
-            2: self.get_repo_contributors,
-            3: self.get_members_repos,
-            4: self.get_members_info,
-            5: self.get_starred_repos,
-            6: self.generate_follower_network,
-            7: self.generate_memberships_network
-        }
-        # Check if member scrape is required
-        if any(int(item) for item in operations_input if int(item) in [3, 4, 5, 6, 7]):
-            self.members = self.get_members()
-        for operation in operations_input:
-            operations_dict[int(operation)]()
 
     def load_json(self, url: str):
         """Load json file using requests.
@@ -435,5 +396,94 @@ class GithubScraper():
         )
 
 
+def parse_args():
+    """Parse arguments.
+
+    We use the 'dest' value to map args with functions/methods. This way, we
+    can use getattr(object, dest)() and avoid long if...then list in __main__ below.
+    """
+    argparser = argparse.ArgumentParser(
+        description="Scrape organizational accounts on Github."
+    )
+    argparser.add_argument(
+        "--all",
+        "-a",
+        action="store_true",
+        help="scrape all the information listed below"
+    )
+    argparser.add_argument(
+        "--repos",
+        "-r",
+        action='store_true',
+        dest="get_org_repos",
+        help="scrape the organizations' repositories (CSV)"
+    )
+    argparser.add_argument(
+        "--contributors",
+        "-c",
+        action="store_true",
+        dest="get_repo_contributors",
+        help="scrape contributors of the organizations' repositories (CSV and GEXF)"
+    )
+    argparser.add_argument(
+        "--member_repos",
+        "-mr",
+        action="store_true",
+        dest="get_members_repos",
+        help="scrape all repositories owned by the members of the organizations (CSV)"
+    )
+    argparser.add_argument(
+        "--member_infos",
+        "-mi",
+        action="store_true",
+        dest="get_members_info",
+        help="scrape information about each member of the organizations (CSV)"
+    )
+    argparser.add_argument(
+        "--starred",
+        "-s",
+        action="store_true",
+        dest="get_starred_repos",
+        help="scrape all repositories starred by the members of the organizations (CSV)"
+    )
+    argparser.add_argument(
+        "--followers",
+        "-f",
+        action="store_true",
+        dest="generate_follower_network",
+        help="generate a follower network. Creates full and narrow network graph, the latter only "
+             "shows how scraped organizations are networked among each other (two GEXF files)"
+    )
+    argparser.add_argument(
+        "--memberships",
+        "-m",
+        action="store_true",
+        dest="generate_memberships_network",
+        help="scrape all organizational memberships to graph membership structures (GEXF)"
+    )
+    arguments = argparser.parse_args()
+    return arguments
+
+
 if __name__ == "__main__":
-    GithubScraper()
+    args: Dict[str, bool] = vars(parse_args())
+    if not any(args.values()):
+        print("You need to provide at least one argument. For usage, call: github_scraper -h")
+        exit()
+    github_scraper = GithubScraper()
+    # To avoid unnecessary API calls, only get org members if user called function that needs it
+    require_members = ['get_members_repos', 'get_members_info', 'get_starred_repos',
+                       'generate_follower_network', 'generate_memberships_network']
+    # If --all was provided, simply run everything
+    if args['all']:
+        github_scraper.members = github_scraper.get_members()
+        for arg in args:
+            if arg != 'all':
+                getattr(github_scraper, arg)()
+    else:
+        # Check what args were provided, get members if necessary, call run scraper
+        called_args = [arg for arg, value in args.items() if value]
+        if any(arg for arg in called_args if arg in require_members):
+            github_scraper.members = github_scraper.get_members()
+        for arg in called_args:
+            getattr(github_scraper, arg)()
