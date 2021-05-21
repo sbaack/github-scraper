@@ -68,7 +68,7 @@ class GithubScraper():
         # if user selects operation that needs this list. Saves API calls.
         self.members: Dict[str, List[str]] = {}
 
-        # Timestamp used to name files and create a timestamped directory for data
+        # Timestamp used to create a timestamped directory for data
         self.timestamp: str = time.strftime('%Y-%m-%d_%H-%M-%S')
         os.makedirs(f"./data/{self.timestamp}/")
 
@@ -482,7 +482,7 @@ if __name__ == "__main__":
             if arg != 'all':
                 getattr(github_scraper, arg)()
     else:
-        # Check what args were provided, get members if necessary, call run scraper
+        # Check what args were provided, get members if necessary, call related methods
         called_args = [arg for arg, value in args.items() if value]
         if any(arg for arg in called_args if arg in require_members):
             github_scraper.members = github_scraper.get_members()
