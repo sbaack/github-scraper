@@ -6,7 +6,7 @@ import json
 import os
 import time
 from sys import exit
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import networkx as nx
 import requests
@@ -39,8 +39,8 @@ class GithubScraper():
         try:
             with open('config.json', 'r') as file:
                 config = json.load(file)
-                self.user = config['user_name']
-                self.api_token = config['api_token']
+                self.user: str = config['user_name']
+                self.api_token: str = config['api_token']
                 if self.user == "" or self.api_token == "":
                     raise KeyError
                 print(f"User name: {self.user}")
@@ -52,7 +52,7 @@ class GithubScraper():
 
         # Read list of organizations from file
         print("\nReading list of organizations from file...")
-        self.orgs = []
+        self.orgs: List[str] = []
         with open('organizations.csv', 'r', encoding="utf-8") as file:
             reader = csv.DictReader(file)
             for row in reader:
@@ -69,7 +69,7 @@ class GithubScraper():
         self.members: Dict[str, List[str]] = {}
 
         # Timestamp used to name files and create a timestamped directory for data
-        self.timestamp = time.strftime('%Y-%m-%d_%H-%M-%S')
+        self.timestamp: str = time.strftime('%Y-%m-%d_%H-%M-%S')
         os.makedirs(f"./data/{self.timestamp}/")
 
     def get_members(self) -> Dict[str, List[str]]:
@@ -89,7 +89,7 @@ class GithubScraper():
                 members[org].append(member['login'])
         return members
 
-    def load_json(self, url: str):
+    def load_json(self, url: str) -> List[Dict[str, Any]]:
         """Load json file using requests.
 
         Iterates over the pages of the API and returns a list of dicts.
@@ -98,10 +98,10 @@ class GithubScraper():
             url (str): Github API URL to load as JSON
 
         Returns:
-            JSON object: Github URL loaded as JSON
+            List[Dict[str, Any]]: Github URL loaded as JSON
         """
-        page = 1
-        json_list = []
+        page: int = 1
+        json_list: List[Dict[str, Any]] = []
         while True:
             json_data = requests.get(
                 f"{url}?per_page=100&page={str(page)}",
@@ -113,12 +113,13 @@ class GithubScraper():
             page += 1
         return json_list
 
-    def generate_csv(self, file_name: str, json_list: List, columns_list: List):
+    def generate_csv(self, file_name: str, json_list: List[Dict[str, Any]],
+                     columns_list: List) -> None:
         """Write CSV file.
 
         Args:
             file_name (str): Name of the CSV file
-            json_list (List): JSON data to turn into CSV
+            json_list (List[Dict[str, Any]]): JSON data to turn into CSV
             columns_list (List): List of columns that represent relevant fields
                                  in the JSON data
         """
@@ -139,10 +140,10 @@ class GithubScraper():
             f"\nCSV file saved as data/{self.timestamp}/{file_name}"
         )
 
-    def get_org_repos(self):
         """Create list of the organizations' repositories."""
+    def get_org_repos(self) -> None:
         print("\nScraping repositories")
-        json_repos = []
+        json_repos: List[Dict[str, Any]] = []
         for org in self.orgs:
             print(f"\nScraping repositories of {org}")
             json_repo = self.load_json(
@@ -153,7 +154,7 @@ class GithubScraper():
                 repo['organization'] = org
                 json_repos.append(repo)
         # Create list of items that should appear as columns in the CSV
-        scraping_items = [
+        scraping_items: List[str] = [
             'organization',
             'name',
             'full_name',
@@ -167,12 +168,12 @@ class GithubScraper():
         ]
         self.generate_csv('org_repositories.csv', json_repos, scraping_items)
 
-    def get_repo_contributors(self):
+    def get_repo_contributors(self) -> None:
         """Create list of contributors to the organizations' repositories."""
         print("\nScraping contributors")
-        json_contributors_all = []
+        json_contributors_all: List[Dict[str, Any]] = []
         graph = nx.DiGraph()
-        scraping_items = [
+        scraping_items: List[str] = [
             'organization',
             'repository',
             'login',
@@ -219,11 +220,11 @@ class GithubScraper():
             f"\nSaved graph file: data/{self.timestamp}/contributor_network.gexf"
         )
 
-    def get_members_repos(self):
+    def get_members_repos(self) -> None:
         """Create list of all the members of an organization and their repositories."""
         print("\nGetting repositories of all members.")
-        json_members_repos = []
-        scraping_items = [
+        json_members_repos: List[Dict[str, Any]] = []
+        scraping_items: List[str] = [
             'organization',
             'user',
             'full_name',
@@ -247,11 +248,11 @@ class GithubScraper():
                     json_members_repos.append(repo)
         self.generate_csv('members_repositories.csv', json_members_repos, scraping_items)
 
-    def get_members_info(self):
+    def get_members_info(self) -> None:
         """Gather information about the organizations' members."""
         print("\nGetting user information of all members.")
-        json_members_info = []
-        scraping_items = [
+        json_members_info: List[Dict[str, Any]] = []
+        scraping_items: List[str] = [
             'organization',
             'login',
             'name',
@@ -276,11 +277,11 @@ class GithubScraper():
                 json_members_info.append(json_org_member)
         self.generate_csv('members_info.csv', json_members_info, scraping_items)
 
-    def get_starred_repos(self):
+    def get_starred_repos(self) -> None:
         """Create list of all the repositories starred by organizations' members."""
         print("\nGetting repositories starred by members.")
-        json_starred_repos_all = []
-        scraping_items = [
+        json_starred_repos_all: List[Dict[str, Any]] = []
+        scraping_items: List[str] = [
             'organization',
             'user',
             'full_name',
@@ -301,7 +302,7 @@ class GithubScraper():
                     json_starred_repos_all.append(repo)
         self.generate_csv('starred_repositories.csv', json_starred_repos_all, scraping_items)
 
-    def generate_follower_network(self):
+    def generate_follower_network(self) -> None:
         """Create full or narrow follower networks of organizations' members.
 
         Get every user following the members of organizations (followers)
@@ -368,7 +369,7 @@ class GithubScraper():
             "- narrow-follower-network.gexf"
         )
 
-    def generate_memberships_network(self):
+    def generate_memberships_network(self) -> None:
         """Take all the members of the organizations and generate a directed graph.
 
         This shows creates a network with the organizational memberships.
