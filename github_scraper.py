@@ -24,6 +24,7 @@ class GithubScraper():
         orgs (List[str]): List of organizational Github accounts to scrape
         data_directory (Path): Directory to store scraped files
         user (str): Name of GitHub user that scrapes the data
+        session (request.Session): Request session using Github user name and API token
     """
 
     def __init__(self) -> None:
@@ -47,6 +48,9 @@ class GithubScraper():
             print("Failed to read Github user name and/or API token.")
             print("Please add them to the config.json file.")
             exit(1)
+
+        self.session = requests.Session()
+        self.session.auth = (self.user, self.api_token)
 
         # Read list of organizations from file
         self.orgs: List[str] = []
@@ -101,15 +105,13 @@ class GithubScraper():
         """
         page: int = 1
         json_list: List[Dict[str, Any]] = []
-        with requests.Session() as session:
-            session.auth = (self.user, self.api_token)
-            while True:
-                json_data = session.get(
-                    f"{url}?per_page=100&page={str(page)}").json()
-                if json_data == []:
-                    break
-                json_list.extend(json_data)
-                page += 1
+        while True:
+            json_data = self.session.get(
+                f"{url}?per_page=100&page={str(page)}").json()
+            if json_data == []:
+                break
+            json_list.extend(json_data)
+            page += 1
         return json_list
 
     def generate_csv(self, file_name: str, json_list: List[Dict[str, Any]],
