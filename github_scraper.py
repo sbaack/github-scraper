@@ -101,15 +101,15 @@ class GithubScraper():
         """
         page: int = 1
         json_list: List[Dict[str, Any]] = []
-        while True:
-            json_data = requests.get(
-                f"{url}?per_page=100&page={str(page)}",
-                auth=(self.user, self.api_token)
-            ).json()
-            if json_data == []:
-                break
-            json_list.extend(json_data)
-            page += 1
+        with requests.Session() as session:
+            session.auth = (self.user, self.api_token)
+            while True:
+                json_data = session.get(
+                    f"{url}?per_page=100&page={str(page)}").json()
+                if json_data == []:
+                    break
+                json_list.extend(json_data)
+                page += 1
         return json_list
 
     def generate_csv(self, file_name: str, json_list: List[Dict[str, Any]],
