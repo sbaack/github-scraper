@@ -44,8 +44,8 @@ class GithubScraper():
                 if self.user == "" or self.api_token == "":
                     raise KeyError
         except (FileNotFoundError, KeyError):
-            print("Failed to read user name and password from config.jon file.")
-            print("Please enter your Github user name and API token.")
+            print("Failed to read Github user name and/or API token.")
+            print("Please add them to the config.json file.")
             exit(1)
 
         # Read list of organizations from file
