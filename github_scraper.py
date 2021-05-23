@@ -22,7 +22,7 @@ class GithubScraper():
         api_token (str): Github API token necessary for authentication
         members (Dict[str, List[str]]): Dict with orgs as keys and list of members as values
         orgs (List[str]): List of organizational Github accounts to scrape
-        timestamp (str): Current date and hour, used to create unique file names
+        data_directory (Path): Directory to store scraped files
         user (str): Name of GitHub user that scrapes the data
     """
 
