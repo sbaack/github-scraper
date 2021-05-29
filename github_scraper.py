@@ -4,9 +4,9 @@ import argparse
 import asyncio
 import csv
 import json
+import sys
 import time
 from pathlib import Path
-from sys import exit
 from typing import Any, Dict, List, Tuple
 
 import aiohttp
@@ -370,8 +370,8 @@ def read_config() -> Tuple[str, str]:
             else:
                 return user, api_token
     except (FileNotFoundError, KeyError):
-        exit("Failed to read Github user name and/or API token."
-             "Please add them to the config.json file.")
+        sys.exit("Failed to read Github user name and/or API token."
+                 "Please add them to the config.json file.")
 
 
 def read_organizations() -> List[str]:
@@ -386,9 +386,9 @@ def read_organizations() -> List[str]:
         for row in reader:
             orgs.append(row['github_org_name'])
     if not orgs:
-        exit("No organizations to scrape found in organizations.csv. "
-             "Please add the names of the organizations you want to scrape "
-             "in the column 'github_org_name' (one name per row).")
+        sys.exit("No organizations to scrape found in organizations.csv. "
+                 "Please add the names of the organizations you want to scrape "
+                 "in the column 'github_org_name' (one name per row).")
     return orgs
 
 
@@ -469,8 +469,8 @@ async def main() -> None:
     """Set up GithubScraper object."""
     args: Dict[str, bool] = parse_args()
     if not any(args.values()):
-        exit("You need to provide at least one argument. "
-             "For usage, call: github_scraper -h")
+        sys.exit("You need to provide at least one argument. "
+                 "For usage, call: github_scraper -h")
     user, api_token = read_config()
     organizations = read_organizations()
     # To avoid unnecessary API calls, only get org members if called functions needs it
