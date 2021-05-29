@@ -20,7 +20,7 @@ optional arguments:
   --starred, -s        scrape all repositories starred by the members of the organizations (CSV)
   --followers, -f      generate a follower network. Creates full and narrow network graph, the latter only shows how scraped
                        organizations are networked among each other (two GEXF files)
-  --memberships, -m    scrape all organizational memberships to graph membership structures (GEXF)
+  --memberships, -m    scrape all organizational memberships of org members (GEXF)
 ```
 
 I originally wrote this scraper in 2015 for my dissertation about civic tech and data journalism. You can find the data I scraped and my analysis [here](https://sbaack.com/blog/scraping-the-global-civic-tech-community-on-github-part-2.html). If you're interested, my final dissertation is available [here](https://research.rug.nl/en/publications/knowing-what-counts-how-journalists-and-civic-technologists-use-a).
@@ -30,7 +30,7 @@ I originally wrote this scraper in 2015 for my dissertation about civic tech and
 ```bash
 # Clone this repository
 git clone https://github.com/sbaack/github-scraper.git
-# Create virtualenv (https://docs.python.org/3/tutorial/venv.html) with your preferred tool, for example:
+# Create virtualenv with your preferred tool, for example:
 cd github-scraper
 python -m venv github-scraper_venv && source github-scraper_venv/bin/activate
 # Install necessary dependencies
