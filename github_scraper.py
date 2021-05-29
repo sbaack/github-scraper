@@ -370,9 +370,8 @@ def read_config() -> Tuple[str, str]:
             else:
                 return user, api_token
     except (FileNotFoundError, KeyError):
-        print("Failed to read Github user name and/or API token.")
-        print("Please add them to the config.json file.")
-        exit(1)
+        exit("Failed to read Github user name and/or API token."
+             "Please add them to the config.json file.")
 
 
 def read_organizations() -> List[str]:
@@ -386,6 +385,10 @@ def read_organizations() -> List[str]:
         reader = csv.DictReader(file)
         for row in reader:
             orgs.append(row['github_org_name'])
+    if not orgs:
+        exit("No organizations to scrape found in organizations.csv. "
+             "Please add the names of the organizations you want to scrape "
+             "in the column 'github_org_name' (one name per row).")
     return orgs
 
 
@@ -466,17 +469,10 @@ async def main() -> None:
     """Set up GithubScraper object."""
     args: Dict[str, bool] = parse_args()
     if not any(args.values()):
-        print("You need to provide at least one argument. "
-              "For usage, call: github_scraper -h")
-        exit()
+        exit("You need to provide at least one argument. "
+             "For usage, call: github_scraper -h")
     user, api_token = read_config()
     organizations = read_organizations()
-    if not organizations:
-        print("No organizations to scrape found in organizations.csv. "
-              "Please add the names of the organizations you want to scrape "
-              "in the column 'github_org_name' (one name per row)."
-              )
-        exit(1)
     # To avoid unnecessary API calls, only get org members if called functions needs it
     require_members = ['get_members_repos', 'get_members_info', 'get_starred_repos',
                        'generate_follower_network', 'generate_memberships_network']
