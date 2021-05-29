@@ -361,7 +361,7 @@ def read_config() -> Tuple[str, str]:
         KeyError: If config file is empty
     """
     try:
-        with open('config.json', 'r') as file:
+        with open(Path(Path.cwd(), 'config.json'), 'r', encoding='utf-8') as file:
             config = json.load(file)
             user: str = config['user_name']
             api_token: str = config['api_token']
@@ -394,6 +394,9 @@ def parse_args() -> Dict[str, bool]:
 
     We use the 'dest' value to map args with functions/methods. This way, we
     can use getattr(object, dest)() and avoid long if...then list in __main__ below.
+
+    Returns:
+        Dict[str, bool]: Result of vars(parse_args())
     """
     argparser = argparse.ArgumentParser(
         description="Scrape organizational accounts on Github."
@@ -474,7 +477,7 @@ async def main() -> None:
               "in the column 'github_org_name' (one name per row)."
               )
         exit(1)
-    # To avoid unnecessary API calls, only get org members called functions needs it
+    # To avoid unnecessary API calls, only get org members if called functions needs it
     require_members = ['get_members_repos', 'get_members_info', 'get_starred_repos',
                        'generate_follower_network', 'generate_memberships_network']
     # Start aiohttp session
