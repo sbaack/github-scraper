@@ -27,6 +27,8 @@ I originally wrote this scraper in 2015 for my dissertation about civic tech and
 
 ## Setup
 
+You need Python 3.7+.
+
 ```bash
 # Clone this repository
 git clone https://github.com/sbaack/github-scraper.git
