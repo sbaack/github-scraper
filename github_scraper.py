@@ -393,7 +393,7 @@ def parse_args() -> Dict[str, bool]:
     """Parse arguments.
 
     We use the 'dest' value to map args with functions/methods. This way, we
-    can use getattr(object, dest)() and avoid long if...then list in __main__ below.
+    can use getattr(object, dest)() and avoid long if...then list in main().
 
     Returns:
         Dict[str, bool]: Result of vars(parse_args())
