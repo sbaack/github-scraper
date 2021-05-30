@@ -370,7 +370,7 @@ def read_config() -> Tuple[str, str]:
             else:
                 return user, api_token
     except (FileNotFoundError, KeyError):
-        sys.exit("Failed to read Github user name and/or API token."
+        sys.exit("Failed to read Github user name and/or API token. "
                  "Please add them to the config.json file.")
 
 
@@ -496,4 +496,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())
