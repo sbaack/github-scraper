@@ -1,2 +1,6 @@
-aiohttp[speedups]
+aiohttp
+    # aiohttp speedups
+    aiodns>=1.1
+    Brotli
+    cchardet
 networkx

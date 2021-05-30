@@ -5,26 +5,24 @@
 #    pip-compile
 #
 aiodns==3.0.0
-    # via aiohttp
-aiohttp[speedups]==3.7.4.post0
+    # via -r requirements.in
+aiohttp==3.7.4.post0
     # via -r requirements.in
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.2.0
     # via aiohttp
-brotlipy==0.7.0
-    # via aiohttp
+brotli==1.0.9
+    # via -r requirements.in
 cchardet==2.1.7
-    # via aiohttp
+    # via -r requirements.in
 cffi==1.14.5
-    # via
-    #   brotlipy
-    #   pycares
+    # via pycares
 chardet==4.0.0
     # via aiohttp
 decorator==4.4.2
     # via networkx
-idna==3.1
+idna==3.2
     # via yarl
 multidict==5.1.0
     # via
