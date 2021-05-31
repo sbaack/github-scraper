@@ -70,18 +70,18 @@ class GithubScraper():
         json_list: List[Dict[str, Any]] = []
         # Scraping member information only requires one request
         if url.split("/")[-2] == 'users':
-            resp = await self.session.get(f"{url}?per_page=100")
-            json_data = await resp.json()
-            json_list.append(json_data)
+            async with self.session.get(f"{url}?per_page=100") as resp:
+                json_data = await resp.json()
+                json_list.append(json_data)
             return json_list
         # Other requests require pagination
         while True:
-            resp = await self.session.get(f"{url}?per_page=100&page={str(page)}")
-            json_data = await resp.json()
-            if json_data == []:
-                break
-            json_list.extend(json_data)
-            page += 1
+            async with self.session.get(f"{url}?per_page=100&page={str(page)}") as resp:
+                json_data = await resp.json()
+                if json_data == []:
+                    break
+                json_list.extend(json_data)
+                page += 1
         return json_list
 
     def generate_csv(self, file_name: str, json_list: List[Dict[str, Any]],
