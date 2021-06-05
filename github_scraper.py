@@ -29,9 +29,11 @@ class GithubScraper():
         """Instantiate object."""
         self.orgs = organizations
         self.session = session
-        # Members of listed organizations. Instantiated as empty dict and only loaded
-        # if user selects operation that needs this list. Saves API calls.
+        # Members and repositories of listed organizations. Instantiated as empty dict
+        # and only loaded if user selects operation that needs this list.
+        # Saves API calls.
         self.members: Dict[str, List[str]] = {}
+        self.repos: List[Dict[str, Any]] = []
         # Directory to store scraped data with timestamp
         self.data_directory: Path = Path(
             Path.cwd(), 'data', time.strftime('%Y-%m-%d_%H-%M-%S')
@@ -46,43 +48,74 @@ class GithubScraper():
         """
         print("Collecting members of specified organizations...")
         members: Dict[str, List[str]] = {}
+        tasks: List[asyncio.Task[Any]] = []
         for org in self.orgs:
-            json_org_members = await self.load_json(
-                f"https://api.github.com/orgs/{org}/members"
-            )
+            url = f"https://api.github.com/orgs/{org}/members"
+            tasks.append(asyncio.create_task(self.call_api(url, organization=org)))
+        json_org_members: List[Dict[str, Any]] = await self.load_json(tasks)
+        # Extract names of org members from JSON data
+        for org in self.orgs:
             members[org] = []
-            for member in json_org_members:
-                members[org].append(member['login'])
+        for member in json_org_members:
+            members[member["organization"]].append(member['login'])
         return members
 
-    async def load_json(self, url: str) -> List[Dict[str, Any]]:
+    async def load_json(self, tasks: List[asyncio.Task[Any]]) -> List[Dict[str, Any]]:
+        """Execute tasks with asyncio.wait() to make API calls.
+
+        Args:
+            tasks (List[asyncio.Task[Any]]): List of awaitable tasks to execute
+
+        Returns:
+            List[Dict[str, Any]]: Full JSON returned by API
+        """
+        full_json: List[Dict[str, Any]] = []
+        done, pending = await asyncio.wait(
+            tasks, return_when="ALL_COMPLETED"
+        )
+        for task in done:
+            try:
+                full_json.extend(await task)
+            except aiohttp.ContentTypeError:
+                # If repository is empty, pass
+                pass
+        return full_json
+
+    async def call_api(self, url: str, **added_fields: str) -> List[Dict[str, Any]]:
         """Load json file using requests.
 
         Makes API calls and returns JSON results.
 
         Args:
             url (str): Github API URL to load as JSON
+            **added_fields (str): Additional information that will be added to each item
+                                  in the JSON data
 
         Returns:
             List[Dict[str, Any]]: Github URL loaded as JSON
         """
         page: int = 1
-        json_list: List[Dict[str, Any]] = []
-        # Scraping member information only requires one request
+        json_data: List[Dict[str, Any]] = []
+        # Requesting user info doesn't support pagination and returns dict, not list
         if url.split("/")[-2] == 'users':
             async with self.session.get(f"{url}?per_page=100") as resp:
-                json_data = await resp.json()
-                json_list.append(json_data)
-            return json_list
-        # Other requests require pagination
+                member_json: Dict[str, Any] = await resp.json()
+                for key, value in added_fields.items():
+                    member_json[key] = value
+                json_data.append(member_json)
+            return json_data
+        # Other API calls return lists and should paginate
         while True:
             async with self.session.get(f"{url}?per_page=100&page={str(page)}") as resp:
-                json_data = await resp.json()
-                if json_data == []:
+                json_page: List[Dict[str, Any]] = await resp.json()
+                if json_page == []:
                     break
-                json_list.extend(json_data)
+                for item in json_page:
+                    for key, value in added_fields.items():
+                        item[key] = value
+                json_data.extend(json_page)
                 page += 1
-        return json_list
+        return json_data
 
     def generate_csv(self, file_name: str, json_list: List[Dict[str, Any]],
                      columns_list: List) -> None:
@@ -111,22 +144,19 @@ class GithubScraper():
             f"- file saved as {Path('data', self.data_directory.name, file_name)}"
         )
 
-    async def get_org_repos(self) -> None:
+    async def get_org_repos(self) -> List[Dict[str, Any]]:
         """Create list of the organizations' repositories."""
-        #TODO: Don't write CSV here, just return repos and make
-        #      a separate function that writes the CSV file. This way
-        #      you can avoid scraping repos twice (again in get_repo_contributors)
         print("Scraping repositories")
-        json_repos: List[Dict[str, Any]] = []
+        tasks: List[asyncio.Task[Any]] = []
         for org in self.orgs:
-            json_repo = await self.load_json(
-                f"https://api.github.com/orgs/{org}/repos")
-            for repo in json_repo:
-                # Add field for org to make CSV file more useful
-                repo['organization'] = org
-                json_repos.append(repo)
+            url = f"https://api.github.com/orgs/{org}/repos"
+            tasks.append(asyncio.create_task(self.call_api(url, organization=org)))
+        return await self.load_json(tasks)
+
+    async def create_org_repo_csv(self) -> None:
+        """Write a CSV file with information about orgs' repositories."""
         # Create list of items that should appear as columns in the CSV
-        scraping_items: List[str] = [
+        table_columns: List[str] = [
             'organization',
             'name',
             'full_name',
@@ -138,14 +168,14 @@ class GithubScraper():
             'fork',
             'description'
         ]
-        self.generate_csv('org_repositories.csv', json_repos, scraping_items)
+        self.generate_csv('org_repositories.csv', self.repos, table_columns)
 
     async def get_repo_contributors(self) -> None:
         """Create list of contributors to the organizations' repositories."""
         print("Scraping contributors")
-        json_contributors_all: List[Dict[str, Any]] = []
+        json_contributors_all = []
         graph = nx.DiGraph()
-        scraping_items: List[str] = [
+        table_columns: List[str] = [
             'organization',
             'repository',
             'login',
@@ -153,32 +183,26 @@ class GithubScraper():
             'html_url',
             'url'
         ]
+        tasks: List[asyncio.Task[Any]] = []
         for org in self.orgs:
-            json_repo = await self.load_json(f"https://api.github.com/orgs/{org}/repos")
-            for repo in json_repo:
-                try:
-                    # First, add repo as a node to the graph
-                    graph.add_node(repo['name'], organization=org)
-                    # Then get a list of contributors
-                    json_contributors_repo = await self.load_json(
-                        "https://api.github.com/repos/"
-                        f"{org}/{repo['name']}/contributors"
+            for repo in self.repos:
+                url = f"https://api.github.com/repos/{org}/{repo['name']}/contributors"
+                tasks.append(
+                    asyncio.create_task(
+                        self.call_api(url, organization=org, repository=repo['name'])
                     )
-                    for contributor in json_contributors_repo:
-                        # Add each contributor as an edge to the graph
-                        graph.add_edge(
-                            contributor['login'],
-                            repo['name'],
-                            organization=org
-                        )
-                        # Prepare CSV and add fields to make it more usable
-                        contributor["organization"] = org
-                        contributor["repository"] = repo["name"]
-                        json_contributors_all.append(contributor)
-                except aiohttp.ContentTypeError:
-                    # If repository is empty, pass
-                    pass
-        self.generate_csv('contributor_list.csv', json_contributors_all, scraping_items)
+                )
+        json_contributors_all = await self.load_json(tasks)
+        self.generate_csv('contributor_list.csv', json_contributors_all, table_columns)
+        for contributor in json_contributors_all:
+            graph.add_node(
+                contributor['repository'], organization=contributor['organization']
+            )
+            graph.add_edge(
+                contributor['login'],
+                contributor['repository'],
+                organization=contributor['organization']
+            )
         nx.write_gexf(
             graph,
             Path(self.data_directory, 'contributor_network.gexf')
@@ -192,7 +216,7 @@ class GithubScraper():
         """Create list of all the members of an organization and their repositories."""
         print("Getting repositories of all members.")
         json_members_repos: List[Dict[str, Any]] = []
-        scraping_items: List[str] = [
+        table_columns: List[str] = [
             'organization',
             'user',
             'full_name',
@@ -202,23 +226,23 @@ class GithubScraper():
             'language',
             'description'
         ]
-        for org in self.orgs:
+        tasks: List[asyncio.Task[Any]] = []
+        for org in self.members:
             for member in self.members[org]:
-                json_repos_members = await self.load_json(
-                    f"https://api.github.com/users/{member}/repos")
-                for repo in json_repos_members:
-                    # Add fields to make CSV file more usable
-                    repo['organization'] = org
-                    repo['user'] = member
-                    json_members_repos.append(repo)
+                url = f"https://api.github.com/users/{member}/repos"
+                tasks.append(
+                    asyncio.create_task(
+                        self.call_api(url, organization=org, user=member)
+                    )
+                )
+        json_members_repos = await self.load_json(tasks)
         self.generate_csv('members_repositories.csv',
-                          json_members_repos, scraping_items)
+                          json_members_repos, table_columns)
 
     async def get_members_info(self) -> None:
         """Gather information about the organizations' members."""
         print("Getting user information of all members.")
-        json_members_info: List[Dict[str, Any]] = []
-        scraping_items: List[str] = [
+        table_columns: List[str] = [
             'organization',
             'login',
             'name',
@@ -228,22 +252,21 @@ class GithubScraper():
             'blog',
             'location'
         ]
+        tasks: List[asyncio.Task[Any]] = []
         for org in self.orgs:
             for member in self.members[org]:
-                # Don't use self.load_json() because pagination method
-                # does not work on API calls for member infos
-                json_org_member = await self.load_json(
-                    f"https://api.github.com/users/{member}")
-                # Add field to make CSV file more usable
-                json_org_member[0]["organization"] = org
-                json_members_info.extend(json_org_member)
-        self.generate_csv('members_info.csv', json_members_info, scraping_items)
+                url = f"https://api.github.com/users/{member}"
+                tasks.append(asyncio.create_task(
+                    self.call_api(url, organization=org))
+                )
+        json_members_info: List[Dict[str, Any]] = await self.load_json(tasks)
+        self.generate_csv('members_info.csv', json_members_info, table_columns)
 
     async def get_starred_repos(self) -> None:
         """Create list of all the repositories starred by organizations' members."""
         print("Getting repositories starred by members.")
         json_starred_repos_all: List[Dict[str, Any]] = []
-        scraping_items: List[str] = [
+        table_columns: List[str] = [
             'organization',
             'user',
             'full_name',
@@ -251,16 +274,16 @@ class GithubScraper():
             'language',
             'description'
         ]
-        for org in self.orgs:
+        tasks: List[asyncio.Task[Any]] = []
+        for org in self.members:
             for member in self.members[org]:
-                json_starred_repos_member = await self.load_json(
-                    f"https://api.github.com/users/{member}/starred")
-                for repo in json_starred_repos_member:
-                    repo['organization'] = org
-                    repo['user'] = member
-                    json_starred_repos_all.append(repo)
+                url = f"https://api.github.com/users/{member}/starred"
+                tasks.append(asyncio.create_task(
+                    self.call_api(url, organization=org, user=member))
+                )
+        json_starred_repos_all = await self.load_json(tasks)
         self.generate_csv('starred_repositories.csv',
-                          json_starred_repos_all, scraping_items)
+                          json_starred_repos_all, table_columns)
 
     async def generate_follower_network(self) -> None:
         """Create full or narrow follower networks of organizations' members.
@@ -272,52 +295,61 @@ class GithubScraper():
         """
         print('Generating follower networks')
         # Create graph dict and add self.members as nodes
-        graph: Dict[str, nx.DiGraph] = {}
-        graph["full"] = nx.DiGraph()
-        graph["narrow"] = nx.DiGraph()
+        graph_full = nx.DiGraph()
+        graph_narrow = nx.DiGraph()
         for org in self.orgs:
             for member in self.members[org]:
-                for graph_type in graph:
-                    graph[graph_type].add_node(member, organization=org)
+                graph_full.add_node(member, organization=org)
+                graph_narrow.add_node(member, organization=org)
 
         # Get followers and following for each member and build graph
-        for org in self.orgs:
+        tasks_followers: List[asyncio.Task[Any]] = []
+        tasks_following: List[asyncio.Task[Any]] = []
+        for org in self.members:
             for member in self.members[org]:
-                json_followers = await self.load_json(
-                    f"https://api.github.com/users/{member}/followers")
-                json_followings = await self.load_json(
-                    f"https://api.github.com/users/{member}/following")
-                # First generate full follower network
-                for follower in json_followers:
-                    graph["full"].add_edge(
-                        follower['login'],
-                        member,
-                        organization=org
+                url_followers = f"https://api.github.com/users/{member}/followers"
+                tasks_followers.append(
+                    asyncio.create_task(
+                        self.call_api(url_followers, follows=member, original_org=org))
+                )
+                url_following = f"https://api.github.com/users/{member}/following"
+                tasks_following.append(
+                    asyncio.create_task(
+                        self.call_api(
+                            url_following, followed_by=member, original_org=org)
                     )
-                    # Then generate narrow follower network
-                    if follower['login'] in self.members[org]:
-                        graph["narrow"].add_edge(
-                            follower['login'],
-                            member,
-                            organization=org
-                        )
-                for following in json_followings:
-                    graph["full"].add_edge(
-                        member,
-                        following['login'],
-                        organization=org
-                    )
-                    if following['login'] in self.members[org]:
-                        graph["narrow"].add_edge(
-                            member,
-                            following['login'],
-                            organization=org
-                        )
-        for graph_type in graph:
-            nx.write_gexf(
-                graph[graph_type],
-                Path(self.data_directory, f"{graph_type}-follower-network.gexf")
+                )
+        json_followers = await self.load_json(tasks_followers)
+        json_following = await self.load_json(tasks_following)
+        # Build full and narrow graphs
+        for follower in json_followers:
+            graph_full.add_edge(
+                follower['login'],
+                follower['follows'],
+                organization=follower['original_org']
             )
+            if follower['login'] in self.members[follower['original_org']]:
+                graph_narrow.add_edge(
+                    follower['login'],
+                    follower['follows'],
+                    organization=follower['original_org'])
+        for following in json_following:
+            graph_full.add_edge(
+                following['followed_by'],
+                following['login'],
+                organization=following['original_org'])
+            if following['login'] in self.members[following['original_org']]:
+                graph_narrow.add_edge(
+                    following['followed_by'],
+                    following['login'],
+                    organization=following['original_org'])
+        # Write graphs and save files
+        nx.write_gexf(
+            graph_full,
+            Path(self.data_directory, "full-follower-network.gexf"))
+        nx.write_gexf(
+            graph_narrow,
+            Path(self.data_directory, "narrow-follower-network.gexf"))
         print(
             f"- files saved in {Path('data', self.data_directory.name)} as "
             "full-follower-network.gexf and narrow-follower-network.gexf"
@@ -330,17 +362,21 @@ class GithubScraper():
         """
         print("Generating network of memberships.")
         graph = nx.DiGraph()
-        for org in self.orgs:
+        tasks: List[asyncio.Task[Any]] = []
+        for org in self.members:
             for member in self.members[org]:
-                graph.add_node(member, node_type='user')
-                json_org_memberships = await self.load_json(
-                    f"https://api.github.com/users/{member}/orgs")
-                for organization in json_org_memberships:
-                    graph.add_edge(
-                        member,
-                        organization['login'],
-                        node_type='organization'
-                    )
+                url = f"https://api.github.com/users/{member}/orgs"
+                tasks.append(asyncio.create_task(
+                    self.call_api(
+                        url, organization=org, scraped_org_member=member))
+                )
+        json_org_memberships = await self.load_json(tasks)
+        for membership in json_org_memberships:
+            graph.add_node(membership['scraped_org_member'], node_type='user')
+            graph.add_edge(
+                membership['scraped_org_member'],
+                membership['login'],  # name of organization user is member of
+                node_type='organization')
         nx.write_gexf(
             graph,
             Path(self.data_directory, 'membership_network.gexf')
@@ -414,7 +450,7 @@ def parse_args() -> Dict[str, bool]:
         "--repos",
         "-r",
         action='store_true',
-        dest="get_org_repos",
+        dest="create_org_repo_csv",
         help="scrape the organizations' repositories (CSV)"
     )
     argparser.add_argument(
@@ -473,9 +509,10 @@ async def main() -> None:
                  "For usage, call: github_scraper -h")
     user, api_token = read_config()
     organizations = read_organizations()
-    # To avoid unnecessary API calls, only get org members if called functions needs it
+    # To avoid unnecessary API calls, only get org members and repos if needed
     require_members = ['get_members_repos', 'get_members_info', 'get_starred_repos',
                        'generate_follower_network', 'generate_memberships_network']
+    require_repos = ['create_org_repo_csv', 'get_repo_contributors']
     # Start aiohttp session
     auth = aiohttp.BasicAuth(user, api_token)
     async with aiohttp.ClientSession(auth=auth) as session:
@@ -483,14 +520,17 @@ async def main() -> None:
         # If --all was provided, simply run everything
         if args['all']:
             github_scraper.members = await github_scraper.get_members()
+            github_scraper.repos = await github_scraper.get_org_repos()
             for arg in args:
                 if arg != 'all':
                     await getattr(github_scraper, arg)()
         else:
-            # Check what args provided, get members if necessary, call related methods
+            # Check args provided, get members/repos if necessary, call related methods
             called_args = [arg for arg, value in args.items() if value]
             if any(arg for arg in called_args if arg in require_members):
                 github_scraper.members = await github_scraper.get_members()
+            if any(arg for arg in called_args if arg in require_repos):
+                github_scraper.repos = await github_scraper.get_org_repos()
             for arg in called_args:
                 await getattr(github_scraper, arg)()
 
