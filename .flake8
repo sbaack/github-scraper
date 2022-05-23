@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 88
+extend_ignore =
+    # No type annotations for 'self' (flake-annotations)
+    ANN101
