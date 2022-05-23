@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Tuple
 import aiohttp
 import networkx as nx
 
+# TODO: Instead of DiGraph, use MultiDiGraph everywhere?
+
 
 class GithubScraper():
     """Scrape information about organizational Github accounts.
@@ -63,6 +65,15 @@ class GithubScraper():
     async def load_json(self, tasks: List[asyncio.Task[Any]]) -> List[Dict[str, Any]]:
         """Execute tasks with asyncio.wait() to make API calls.
 
+        TODO: Catch when rate limit exceeded. Error message:
+
+        {'documentation_url':
+        'https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting',
+        'message': 'API rate limit exceeded for user ID 8274140.'}
+
+        TODO: Double check if you can get rid of try..except aiohttp.ContentTypeError
+              and only call it in call_api instead
+
         Args:
             tasks (List[asyncio.Task[Any]]): List of awaitable tasks to execute
 
@@ -100,6 +111,8 @@ class GithubScraper():
         if url.split("/")[-2] == 'users':
             async with self.session.get(f"{url}?per_page=100") as resp:
                 member_json: Dict[str, Any] = await resp.json()
+                # if "documentation_url" in member_json:
+                #     sys.exit(member_json['message'])
                 for key, value in added_fields.items():
                     member_json[key] = value
                 json_data.append(member_json)
@@ -292,6 +305,12 @@ class GithubScraper():
         and the users they are following themselves (following). Then generate two
         directed graphs with NetworkX. Only includes members of specified organizations
         if in narrow follower network.
+
+        TODO: Don't create a separate narrow follower network. Instead, try to add an
+              attribute to the nodes to mark them as 'narrow' so you can filter them out
+              in Gephi. Will simplify this function, but double check that this works
+              correctly before you remove the code for generating narrow follower
+              networks
         """
         print('Generating follower networks')
         # Create graph dict and add self.members as nodes
