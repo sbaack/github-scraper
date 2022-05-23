@@ -1,6 +1,2 @@
-aiohttp>=3.7.4
-    # aiohttp speedups
-    aiodns>=1.1
-    Brotli
-    cchardet
+aiohttp[speedups]
 networkx
