@@ -1,6 +1,6 @@
 # GitHub scraper
 
-This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list or organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](https://gephi.org/gexf/format/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
+This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list of organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](https://gephi.org/gexf/format/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
 
 The scraper offers the following options:
 
@@ -27,7 +27,7 @@ I originally wrote this scraper in 2015 for my dissertation about civic tech and
 
 ## Setup
 
-You need Python 3.7+.
+You need Python 3.9+.
 
 ```bash
 # Clone this repository
