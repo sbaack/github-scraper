@@ -7,6 +7,6 @@ help:
 	@echo 'update-deps: install or update pip-tools and update pinned requirements'
 
 update-deps:
-	pip install --upgrade pip setuptools pip-tools
+	python -m pip install --upgrade pip setuptools pip-tools
 	pip-compile --quiet --allow-unsafe
 	pip-sync
