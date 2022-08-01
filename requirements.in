@@ -1,2 +1,2 @@
-aiohttp[speedups]
-networkx
+aiohttp[speedups] >= 3.8.1
+networkx >= 2.8

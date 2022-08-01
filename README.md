@@ -36,13 +36,13 @@ git clone https://github.com/sbaack/github-scraper.git
 cd github-scraper
 python -m venv github-scraper_venv && source github-scraper_venv/bin/activate
 # Install necessary dependencies
-python -m pip install -r requirements.txt
+python -m pip install -Ur requirements.in
 ```
 
 Next, you need to add information to two configuration files. First, add your GitHub user name and your [personal access token](https://github.com/settings/tokens) to access the GitHub API in the `config.json` file. Second, add the Github account names of the organizations you want to scrape to the `organizations.csv` spreadsheet in the column *github_org_name*. For example, if you want to scrape [mySociety](https://github.com/mysociety), [Open Knowledge](https://github.com/okfn), and [Ushahidi](https://github.com/ushahidi), your file will look like this:
 
 | github_org_name |
-|:----------------|
+| :-------------- |
 | mysociety       |
 | okfn            |
 | ushahidi        |
