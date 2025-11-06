@@ -1,6 +1,6 @@
 # GitHub scraper
 
-This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list of organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](https://gephi.org/gexf/format/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
+This tool focuses on scraping information from _[organizational Github accounts](https://developer.github.com/v3/orgs/)_, which means that it only takes a list of organizations as input, not normal user accounts. It generates CSV spreadsheets or [GEXF](https://gexf.net/) files to be used in network analysis software like [Gephi](https://gephi.github.io/).
 
 The scraper offers the following options:
 
@@ -23,7 +23,7 @@ optional arguments:
   --memberships, -m    scrape all organizational memberships of org members (GEXF)
 ```
 
-I originally wrote this scraper in 2015 for my dissertation about civic tech and data journalism. You can find the data I scraped and my analysis [here](https://sbaack.com/blog/scraping-the-global-civic-tech-community-on-github-part-2.html). If you're interested, my final dissertation is available [here](https://research.rug.nl/en/publications/knowing-what-counts-how-journalists-and-civic-technologists-use-a).
+I originally wrote this scraper in 2015 for my dissertation about civic tech and data journalism. You can find the data I scraped and my analysis [here](https://sbaack.com/posts/2015-11-19-scraping-the-global-civic-tech-community-on-github-part-2/). If you're interested, my final dissertation is available [here](http://hdl.handle.net/11370/4c94668a-c25c-43cb-9b36-5d54e3ff3c2e).
 
 ## Setup
 
@@ -62,4 +62,4 @@ python -m github_scraper --repos --followers  # OR use the shortcuts: python -m 
 python -m github_scraper --starred  # OR github_scraper -s
 ```
 
-The results will be stored in the `data` subfolder, where each scrape creates it's own directory named according to the date (in the form of YEAR-MONTH-DAY_HOUR-MINUTE-SECOND).
+The results will be stored in the `data` subfolder, where each scrape creates it's own directory named according to the date (in the form of `YEAR-MONTH-DAY_HOUR-MINUTE-SECOND`).
